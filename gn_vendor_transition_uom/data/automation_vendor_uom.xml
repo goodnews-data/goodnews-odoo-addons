@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="automation_vendor_uom" model="base.automation">
+        <field name="name">Automatizar UdM de compra según proveedor</field>
+        <field name="model_id" ref="purchase.model_purchase_order_line"/>
+        <field name="trigger">on_create_or_write</field>
+        <field name="trigger_field_ids" eval="[(6, 0, [
+            ref('purchase.field_purchase_order_line__product_id'),
+            ref('purchase.field_purchase_order_line__product_packaging_id'),
+            ref('purchase.field_purchase_order_line__product_qty'),
+            ref('purchase.field_purchase_order_line__product_uom'),
+        ])]"/>
+        <field name="filter_pre_domain">["&amp;", ("state", "in", ["draft", "sent"]), ("display_type", "=", False)]</field>
+        <field name="filter_domain">["&amp;", ("state", "in", ["draft", "sent"]), ("display_type", "=", False)]</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <record id="action_vendor_uom_code" model="ir.actions.server">
+        <field name="name">Ejecutar código</field>
+        <field name="model_id" ref="purchase.model_purchase_order_line"/>
+        <field name="base_automation_id" ref="automation_vendor_uom"/>
+        <field name="usage">base_automation</field>
+        <field name="state">code</field>
+        <field name="code">
+# ============================================================
+# Automation: vendor-specific UoM on PO lines
+# Model:    purchase.order.line
+# Trigger:  on create / update (product_id, product_uom,
+#           product_qty, product_packaging_id)
+# Apply on: [("state", "in", ["draft", "sent", "purchase"]),
+#            ("display_type", "=", False), ("product_id", "!=", False)]
+# Source:   product.supplierinfo.x_studio_vendor_uom (custom)
+#           product.supplierinfo.x_studio_transition (custom)
+# Rule 1:   transition guard (draft/sent/purchase): a line already in
+#           a transition UoM keeps the transition price, because Odoo
+#           recomputes it from the standard vendor row on qty changes
+# Rule 2:   standard vendor UoM (draft/sent only): apply vendor UoM,
+#           drop packaging, set vendor price as-is
+# Skip:     lines created by the transition button (context flag)
+# Chatter:  one internal note per order
+# ============================================================
+
+# ---- Constants ----
+EDITABLE_STATES = ("draft", "sent")
+TRANSITION_STATES = ("draft", "sent", "purchase")
+NOTE_SUBTYPE = "mail.mt_note"
+NOTE_TITLE = "&lt;b&gt;🔁 Ajuste automático de UdM de proveedor&lt;/b&gt;"
+VENDOR_UOM_FIELD = "x_studio_vendor_uom"
+TRANSITION_FIELD = "x_studio_transition"
+SKIP_CONTEXT_KEY = "skip_vendor_uom_rule"
+SET_VENDOR_PRICE = True     # vendor price is expressed in the vendor UoM
+DEBUG = False               # True = log every decision in the chatter
+PRICE_DIGITS = 6
+
+notes_by_order = {}         # order.id -&gt; list of html lines
+orders_by_id = {}           # order.id -&gt; order record
+
+# Lines written by the transition button are left untouched
+target_lines = env["purchase.order.line"] if env.context.get(SKIP_CONTEXT_KEY) else records
+
+for line in target_lines:
+    order = line.order_id
+    product = line.product_id
+
+    # Guard: only product lines of open orders
+    if line.display_type or not product or order.state not in TRANSITION_STATES:
+        continue
+
+    if order.id not in notes_by_order:
+        notes_by_order[order.id] = []
+        orders_by_id[order.id] = order
+    notes = notes_by_order[order.id]
+
+    order_date = order.date_order.date() if order.date_order else datetime.date.today()
+
+    # ---- Rule 1: transition guard ----
+    transition = False
+    for s in product.with_company(order.company_id).seller_ids:
+        if not s[TRANSITION_FIELD] or s[VENDOR_UOM_FIELD] != line.product_uom:
+            continue
+        if s.partner_id.commercial_partner_id != order.partner_id.commercial_partner_id:
+            continue
+        if s.company_id and s.company_id != order.company_id:
+            continue
+        if s.product_id and s.product_id != product:
+            continue
+        transition = s
+        break
+
+    if transition:
+        t_price = transition.price
+        if transition.currency_id and transition.currency_id != order.currency_id:
+            t_price = transition.currency_id._convert(
+                t_price, order.currency_id, order.company_id, order_date)
+        if float_compare(line.price_unit, t_price, precision_digits=PRICE_DIGITS) != 0:
+            old_price = line.price_unit
+            line.write({"price_unit": t_price})
+            notes.append("🔄 %s: precio de transición restaurado %s → %s (%s)." % (
+                product.display_name, old_price, t_price, line.product_uom.display_name))
+        elif DEBUG:
+            notes.append("· %s: precio de transición correcto." % product.display_name)
+        continue
+
+    # ---- Rule 2: standard vendor UoM (only before confirmation) ----
+    if order.state not in EDITABLE_STATES:
+        continue
+
+    seller = product.with_company(order.company_id)._select_seller(
+        partner_id=order.partner_id,
+        quantity=line.product_qty,
+        date=order_date,
+        uom_id=line.product_uom,
+        params={"order_id": order},
+    )
+    if not seller:
+        if DEBUG:
+            notes.append("· %s: sin proveedor aplicable." % product.display_name)
+        continue
+
+    # A transition row must never be the default seller (Odoo would price from it)
+    if seller[TRANSITION_FIELD]:
+        notes.append("⚠ %s: Odoo ha elegido la fila de transición de %s como proveedor por defecto. "
+                     "Colócala debajo de la fila estándar en la pestaña Compra." % (
+                         product.display_name, seller.partner_id.display_name))
+        continue
+
+    vendor_uom = seller[VENDOR_UOM_FIELD]
+
+    # Rule applies only when vendor has its own UoM, different from purchase UoM
+    if not vendor_uom or vendor_uom == product.uom_po_id:
+        if DEBUG:
+            notes.append("· %s: proveedor sin UdM propia o igual a la de compra." % product.display_name)
+        continue
+
+    # Different category would raise on quantity conversion
+    if vendor_uom.category_id != product.uom_id.category_id:
+        notes.append("⚠ %s: UdM proveedor %s no es de la categoría %s. No se modifica." % (
+            product.display_name, vendor_uom.display_name,
+            product.uom_id.category_id.display_name))
+        continue
+
+    vals = {}
+    changes = []
+
+    if line.product_uom != vendor_uom:
+        vals["product_uom"] = vendor_uom.id
+        changes.append("UdM %s → %s" % (line.product_uom.display_name, vendor_uom.display_name))
+
+    if line.product_packaging_id:
+        vals["product_packaging_id"] = False
+        vals["product_packaging_qty"] = 0.0
+        changes.append("embalaje %s eliminado" % line.product_packaging_id.display_name)
+
+    if SET_VENDOR_PRICE:
+        vendor_price = seller.price
+        if seller.currency_id and seller.currency_id != order.currency_id:
+            vendor_price = seller.currency_id._convert(
+                vendor_price, order.currency_id, order.company_id, order_date)
+
+        uom_changing = "product_uom" in vals
+        price_differs = float_compare(
+            line.price_unit, vendor_price, precision_digits=PRICE_DIGITS) != 0
+
+        # Always set price when UoM changes: otherwise Odoo recomputes it
+        # converting from uom_po_id, and the vendor price is already per vendor UoM
+        if uom_changing or price_differs:
+            vals["price_unit"] = vendor_price
+            changes.append("precio %s → %s" % (line.price_unit, vendor_price))
+
+    if not vals:
+        if DEBUG:
+            notes.append("· %s: ya correcto." % product.display_name)
+        continue
+
+    # Single write: written fields are protected from recompute in this call
+    line.write(vals)
+    notes.append("✅ %s (proveedor %s): %s." % (
+        product.display_name, seller.partner_id.display_name, ", ".join(changes)))
+
+# ---- Chatter: one internal note per order ----
+for order_id in notes_by_order:
+    lines_html = notes_by_order[order_id]
+    if lines_html:
+        orders_by_id[order_id].message_post(
+            body=NOTE_TITLE + "&lt;br/&gt;" + "&lt;br/&gt;".join(lines_html),
+            body_is_html=True,
+            subtype_xmlid=NOTE_SUBTYPE,
+        )
+</field>
+    </record>
+</odoo>

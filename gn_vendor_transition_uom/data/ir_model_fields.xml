@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Kept as manual x_studio_* fields so the server-action code and existing data stay compatible -->
+    <record id="field_supplierinfo_transition" model="ir.model.fields">
+        <field name="model_id" ref="product.model_product_supplierinfo"/>
+        <field name="name">x_studio_transition</field>
+        <field name="field_description">Transition</field>
+        <field name="ttype">boolean</field>
+        <field name="state">manual</field>
+        <field name="store" eval="True"/>
+        <field name="copied" eval="True"/>
+    </record>
+
+    <record id="field_supplierinfo_vendor_uom" model="ir.model.fields">
+        <field name="model_id" ref="product.model_product_supplierinfo"/>
+        <field name="name">x_studio_vendor_uom</field>
+        <field name="field_description">Udm Transición</field>
+        <field name="ttype">many2one</field>
+        <field name="relation">uom.uom</field>
+        <field name="on_delete">set null</field>
+        <field name="state">manual</field>
+        <field name="store" eval="True"/>
+        <field name="copied" eval="True"/>
+    </record>
+</odoo>

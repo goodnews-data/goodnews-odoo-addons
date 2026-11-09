@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_activate_transition_product" model="ir.actions.server">
+        <field name="name">Activar producto transición</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="binding_model_id" ref="stock.model_stock_picking"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+# ============================================================
+# Server action: switch PO lines to the vendor transition UoM
+# Model:   stock.picking (contextual action or Studio button)
+# Source:  product.supplierinfo rows with x_studio_transition = True,
+#          x_studio_vendor_uom set and price expressed in that UoM
+# Flow A:  PO with nothing received and no active bills
+#          cancel receipt -&gt; cancel PO -&gt; back to draft -&gt;
+#          replace transition lines -&gt; confirm (no email) -&gt;
+#          open the new receipt (not validated)
+# Flow B:  PO partially received or billed (cannot be cancelled)
+#          cancel and delete pending moves of transition lines -&gt;
+#          reduce old line to the received qty -&gt; add new line
+#          (Odoo adds its move to the open receipt) -&gt; open receipt
+# Safety:  single savepoint; on any error everything is rolled
+#          back and the error is logged in the chatter
+# ============================================================
+
+# ---- Constants ----
+TRANSITION_FIELD = "x_studio_transition"
+VENDOR_UOM_FIELD = "x_studio_vendor_uom"
+SKIP_CONTEXT_KEY = "skip_vendor_uom_rule"
+OPEN_PICKING_STATES = ["draft", "waiting", "confirmed", "assigned"]
+CLOSED_STATES = ["done", "cancel"]
+SAVEPOINT_NAME = "transition_uom"
+NOTE_SUBTYPE = "mail.mt_note"
+NOTE_TITLE = "&lt;b&gt;🔄 Cambio a UdM de transición&lt;/b&gt;"
+
+# ---- Guards (nothing modified yet) ----
+if len(records) != 1:
+    raise UserError("Ejecuta esta acción desde una única recepción.")
+
+picking = records
+order = picking.purchase_id
+today = datetime.date.today()
+
+if picking.picking_type_code != "incoming" or not order:
+    raise UserError("Esta acción solo funciona en recepciones de un pedido de compra.")
+if picking.state not in OPEN_PICKING_STATES:
+    raise UserError("La recepción %s ya está validada o cancelada." % picking.name)
+
+# New lines are created with this context so the automatic UoM rule skips them
+skip_ctx = dict(env.context)
+skip_ctx[SKIP_CONTEXT_KEY] = True
+line_model = env["purchase.order.line"].with_context(skip_ctx)
+
+# ---- 1. Find PO lines with a transition UoM for this vendor ----
+plan = []
+warnings = []
+
+for line in order.order_line:
+    product = line.product_id
+    if line.display_type or not product:
+        continue
+
+    transition = False
+    for s in product.with_company(order.company_id).seller_ids:
+        if not s[TRANSITION_FIELD] or not s[VENDOR_UOM_FIELD]:
+            continue
+        if s.partner_id.commercial_partner_id != order.partner_id.commercial_partner_id:
+            continue
+        if s.company_id and s.company_id != order.company_id:
+            continue
+        if s.product_id and s.product_id != product:
+            continue
+        if s.date_start and s.date_start &gt; today:
+            continue
+        if s.date_end and s.date_end &lt; today:
+            continue
+        transition = s
+        break
+
+    if not transition:
+        continue
+
+    t_uom = transition[VENDOR_UOM_FIELD]
+    if line.product_uom == t_uom:
+        warnings.append("ℹ️ %s ya está en %s, sin cambios." % (
+            product.display_name, t_uom.display_name))
+        continue
+    if t_uom.category_id != line.product_uom.category_id:
+        warnings.append("⚠ %s: %s no es de la misma categoría que %s, sin cambios." % (
+            product.display_name, t_uom.display_name, line.product_uom.display_name))
+        continue
+
+    t_price = transition.price
+    if transition.currency_id and transition.currency_id != order.currency_id:
+        t_price = transition.currency_id._convert(
+            t_price, order.currency_id, order.company_id, today)
+
+    plan.append({"line": line, "uom": t_uom, "price": t_price})
+
+# ---- 2. Nothing to do: log and notify ----
+if not plan:
+    body = NOTE_TITLE + "&lt;br/&gt;Ningún producto de %s tiene UdM de transición para %s." % (
+        order.name, order.partner_id.display_name)
+    if warnings:
+        body += "&lt;br/&gt;" + "&lt;br/&gt;".join(warnings)
+    picking.message_post(body=body, body_is_html=True, subtype_xmlid=NOTE_SUBTYPE)
+    action = {
+        "type": "ir.actions.client",
+        "tag": "display_notification",
+        "params": {
+            "title": "Sin cambios",
+            "message": "Ningún producto de este pedido está en transición para este proveedor.",
+            "type": "info",
+            "sticky": False,
+        },
+    }
+
+# ---- 3. Apply changes inside a savepoint ----
+else:
+    done_moves = order.order_line.move_ids.filtered_domain([("state", "=", "done")])
+    active_bills = order.invoice_ids.filtered_domain([("state", "!=", "cancel")])
+    full_flow = not done_moves and not active_bills
+
+    summary = []
+    target_picking = env["stock.picking"]
+    error_text = False
+
+    env.cr.execute("SAVEPOINT " + SAVEPOINT_NAME)
+    try:
+        if full_flow:
+            # A.1 cancel open receipts, cancel PO, back to draft
+            order.picking_ids.filtered_domain([("state", "not in", CLOSED_STATES)]).action_cancel()
+            order.button_cancel()
+            order.button_draft()
+
+            # A.2 replace each transition line (qty converted, price as-is)
+            for item in plan:
+                old = item["line"]
+                new_qty = old.product_uom._compute_quantity(old.product_qty, item["uom"])
+                vals = {
+                    "order_id": order.id,
+                    "product_id": old.product_id.id,
+                    "product_qty": new_qty,
+                    "product_uom": item["uom"].id,
+                    "price_unit": item["price"],
+                    "taxes_id": [(6, 0, old.taxes_id.ids)],
+                    "date_planned": old.date_planned,
+                    "sequence": old.sequence,
+                    "analytic_distribution": old.analytic_distribution,
+                }
+                summary.append("%s: %s %s a %s → %s %s a %s" % (
+                    old.product_id.display_name,
+                    old.product_qty, old.product_uom.display_name, old.price_unit,
+                    new_qty, item["uom"].display_name, item["price"]))
+                old.unlink()
+                line_model.create(vals)
+
+            # A.3 confirm (standard confirm sends no email)
+            order.button_confirm()
+
+        else:
+            # B: PO cannot be cancelled, adjust lines in place
+            for item in plan:
+                old = item["line"]
+                remaining = old.product_qty - old.qty_received
+                if float_compare(remaining, 0.0, precision_rounding=old.product_uom.rounding) &lt;= 0:
+                    summary.append("%s: ya recibido completo en %s, sin cambios." % (
+                        old.product_id.display_name, old.product_uom.display_name))
+                    continue
+
+                new_qty = old.product_uom._compute_quantity(remaining, item["uom"])
+                vals = {
+                    "order_id": order.id,
+                    "product_id": old.product_id.id,
+                    "product_qty": new_qty,
+                    "product_uom": item["uom"].id,
+                    "price_unit": item["price"],
+                    "taxes_id": [(6, 0, old.taxes_id.ids)],
+                    "date_planned": old.date_planned,
+                    "sequence": old.sequence,
+                    "analytic_distribution": old.analytic_distribution,
+                }
+
+                # B.1 remove pending moves of the old line from the receipt
+                pending = old.move_ids.filtered_domain([("state", "not in", CLOSED_STATES)])
+                pending._action_cancel()
+                pending.unlink()
+
+                # B.2 old line keeps only what was already received
+                old_qty = old.product_qty
+                old.write({"product_qty": old.qty_received})
+
+                # B.3 new line: Odoo adds its move to the open receipt
+                line_model.create(vals)
+
+                summary.append("%s: línea antigua %s → %s %s (recibido) | nueva línea %s %s a %s" % (
+                    old.product_id.display_name, old_qty, old.qty_received,
+                    old.product_uom.display_name, new_qty,
+                    item["uom"].display_name, item["price"]))
+
+        target_picking = order.picking_ids.filtered_domain([("state", "not in", CLOSED_STATES)])[:1]
+        env.cr.execute("RELEASE SAVEPOINT " + SAVEPOINT_NAME)
+
+    except Exception as e:
+        env.cr.execute("ROLLBACK TO SAVEPOINT " + SAVEPOINT_NAME)
+        env.invalidate_all()
+        error_text = str(e)
+
+    # ---- 4. Chatter + navigation ----
+    if error_text:
+        picking.message_post(
+            body=NOTE_TITLE + "&lt;br/&gt;❌ No se ha aplicado ningún cambio. Error: %s" % error_text,
+            body_is_html=True,
+            subtype_xmlid=NOTE_SUBTYPE,
+        )
+        action = {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Error en el cambio de UdM",
+                "message": error_text,
+                "type": "danger",
+                "sticky": True,
+            },
+        }
+    else:
+        flow_label = "A (pedido cancelado, rehecho y confirmado)"
+        if not full_flow:
+            flow_label = "B (recepción parcial o facturada: pedido ajustado sin cancelar)"
+
+        body = NOTE_TITLE + "&lt;br/&gt;Recepción origen: %s | Pedido: %s | Flujo %s&lt;br/&gt;" % (
+            picking.name, order.name, flow_label)
+        body += "&lt;br/&gt;".join(summary)
+        if warnings:
+            body += "&lt;br/&gt;" + "&lt;br/&gt;".join(warnings)
+        if order.state != "purchase":
+            body += "&lt;br/&gt;⚠ El pedido ha quedado en estado %s: revisa si requiere aprobación." % order.state
+
+        order.message_post(body=body, body_is_html=True, subtype_xmlid=NOTE_SUBTYPE)
+        picking.message_post(body=body, body_is_html=True, subtype_xmlid=NOTE_SUBTYPE)
+        if target_picking and target_picking != picking:
+            target_picking.message_post(body=body, body_is_html=True, subtype_xmlid=NOTE_SUBTYPE)
+
+        if target_picking:
+            action = {
+                "type": "ir.actions.act_window",
+                "res_model": "stock.picking",
+                "res_id": target_picking.id,
+                "view_mode": "form",
+                "views": [[False, "form"]],
+                "target": "current",
+            }
+        else:
+            action = {
+                "type": "ir.actions.act_window",
+                "res_model": "purchase.order",
+                "res_id": order.id,
+                "view_mode": "form",
+                "views": [[False, "form"]],
+                "target": "current",
+            }
+</field>
+    </record>
+</odoo>

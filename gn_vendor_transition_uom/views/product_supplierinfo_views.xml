@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_supplierinfo_tree_view_transition" model="ir.ui.view">
+        <field name="name">product.supplierinfo.tree.transition</field>
+        <field name="model">product.supplierinfo</field>
+        <field name="inherit_id" ref="product.product_supplierinfo_tree_view"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="x_studio_transition" optional="show"/>
+                <field name="x_studio_vendor_uom" string="Udm Transición" optional="show"/>
+            </field>
+        </field>
+    </record>
+</odoo>
