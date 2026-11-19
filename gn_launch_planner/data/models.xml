@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Models (manual, x_ prefix: installable with "Import module")
+           x_gn_launch           one scheduled launch (header)
+           x_gn_launch_line      one change inside a launch
+           x_gn_launch_snapshot  previous value of each touched record (undo)
+
+         Every manual field reloads the whole registry when it is created
+         (~3 s each on GoodNews). Fields are therefore created in batch,
+         inside the ir.model record, so the import stays well under the
+         server time limit.
+
+         noupdate="1": the (0, 0, ...) field batches run only on install.
+         A future version that adds a field must add it as its own
+         ir.model.fields record, never by editing these batches.
+         ============================================================ -->
+    <data noupdate="1">
+
+    <!-- ==== x_gn_launch ==== -->
+    <record id="model_x_gn_launch" model="ir.model">
+        <field name="name">Lanzamiento programado</field>
+        <field name="model">x_gn_launch</field>
+        <field name="state">manual</field>
+        <field name="is_mail_thread" eval="True"/>
+        <field name="field_id" eval="[
+            (0, 0, {'name': 'x_name', 'field_description': 'Lanzamiento', 'ttype': 'char',
+                    'required': True, 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_active', 'field_description': 'Activo', 'ttype': 'boolean',
+                    'state': 'manual', 'copied': False}),
+            (0, 0, {'name': 'x_company_id', 'field_description': 'Compañía', 'ttype': 'many2one',
+                    'relation': 'res.company', 'on_delete': 'restrict', 'required': True,
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_scheduled_at', 'field_description': 'Fecha y hora', 'ttype': 'datetime',
+                    'required': True, 'tracking': True, 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_state', 'field_description': 'Estado', 'ttype': 'selection',
+                    'selection': &quot;[('draft', 'Borrador'), ('scheduled', 'Programado'), ('done', 'Hecho'), ('error', 'Error'), ('undone', 'Deshecho')]&quot;,
+                    'required': True, 'tracking': True, 'state': 'manual', 'copied': False}),
+            (0, 0, {'name': 'x_product_ids', 'field_description': 'Productos', 'ttype': 'many2many',
+                    'relation': 'product.template', 'relation_table': 'x_gn_launch_product_rel',
+                    'column1': 'launch_id', 'column2': 'product_tmpl_id', 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_pos_ids', 'field_description': 'Puntos de venta', 'ttype': 'many2many',
+                    'relation': 'pos.config', 'relation_table': 'x_gn_launch_pos_rel',
+                    'column1': 'launch_id', 'column2': 'pos_config_id', 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_log', 'field_description': 'Resultado', 'ttype': 'text',
+                    'readonly': True, 'state': 'manual', 'copied': False}),
+            (0, 0, {'name': 'x_executed_at', 'field_description': 'Ejecutado el', 'ttype': 'datetime',
+                    'readonly': True, 'state': 'manual', 'copied': False}),
+        ]"/>
+    </record>
+
+    <!-- ==== x_gn_launch_line ==== -->
+    <record id="model_x_gn_launch_line" model="ir.model">
+        <field name="name">Cambio de lanzamiento</field>
+        <field name="model">x_gn_launch_line</field>
+        <field name="state">manual</field>
+        <field name="field_id" eval="[
+            (0, 0, {'name': 'x_launch_id', 'field_description': 'Lanzamiento', 'ttype': 'many2one',
+                    'relation': 'x_gn_launch', 'on_delete': 'cascade', 'required': True, 'index': True,
+                    'state': 'manual'}),
+            (0, 0, {'name': 'x_sequence', 'field_description': 'Secuencia', 'ttype': 'integer',
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_operation', 'field_description': 'Qué cambia', 'ttype': 'selection',
+                    'selection': &quot;[('pos_available', 'Disponible en TPV'), ('list_price', 'Precio de venta'), ('standard_price', 'Coste'), ('name', 'Nombre del producto'), ('pos_categ', 'Categoría del TPV del producto'), ('combos', 'Combinaciones del producto'), ('pricelist_price', 'Precio en tarifa'), ('supplier_price', 'Precio de proveedor'), ('archive', 'Archivar productos'), ('unarchive', 'Recuperar productos archivados'), ('pos_categories', 'Categorías visibles en el punto de venta')]&quot;,
+                    'required': True, 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_mode', 'field_description': 'Cómo', 'ttype': 'selection',
+                    'selection': &quot;[('on', 'Activar'), ('off', 'Desactivar'), ('set', 'Poner precio'), ('add', 'Añadir'), ('remove', 'Quitar'), ('replace', 'Sustituir por')]&quot;,
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_value_float', 'field_description': 'Importe', 'ttype': 'float',
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_allow_zero', 'field_description': 'Importe 0 a propósito', 'ttype': 'boolean',
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_value_char', 'field_description': 'Nuevo nombre', 'ttype': 'char',
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_lang_id', 'field_description': 'Idioma (vacío = todos)', 'ttype': 'many2one',
+                    'relation': 'res.lang', 'on_delete': 'set null', 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_pos_categ_ids', 'field_description': 'Categorías del TPV', 'ttype': 'many2many',
+                    'relation': 'pos.category', 'relation_table': 'x_gn_launch_line_pos_categ_rel',
+                    'column1': 'line_id', 'column2': 'pos_categ_id', 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_combo_ids', 'field_description': 'Combinaciones', 'ttype': 'many2many',
+                    'relation': 'pos.combo', 'relation_table': 'x_gn_launch_line_combo_rel',
+                    'column1': 'line_id', 'column2': 'combo_id', 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_pricelist_ids', 'field_description': 'Tarifas', 'ttype': 'many2many',
+                    'relation': 'product.pricelist', 'relation_table': 'x_gn_launch_line_pricelist_rel',
+                    'column1': 'line_id', 'column2': 'pricelist_id', 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_supplier_ids', 'field_description': 'Proveedores', 'ttype': 'many2many',
+                    'relation': 'res.partner', 'relation_table': 'x_gn_launch_line_supplier_rel',
+                    'column1': 'line_id', 'column2': 'partner_id', 'state': 'manual', 'copied': True}),
+        ]"/>
+    </record>
+
+    </data>
+
+    <!-- Human summary of the line, shown in the list of changes (computed, not stored) -->
+    <record id="field_line_x_summary" model="ir.model.fields">
+        <field name="model_id" ref="model_x_gn_launch_line"/>
+        <field name="name">x_summary</field>
+        <field name="field_description">Detalle</field>
+        <field name="ttype">char</field>
+        <field name="store" eval="False"/>
+        <field name="readonly" eval="True"/>
+        <field name="state">manual</field>
+        <field name="depends">x_operation,x_mode,x_value_float,x_allow_zero,x_value_char,x_lang_id,x_pos_categ_ids,x_combo_ids,x_pricelist_ids,x_supplier_ids</field>
+        <field name="compute"><![CDATA[
+MODES = {"on": "Activar", "off": "Desactivar", "set": "Poner", "add": "Añadir",
+         "remove": "Quitar", "replace": "Sustituir por"}
+for line in self:
+    op = line.x_operation
+    mode = MODES.get(line.x_mode, "")
+    amount = "%.2f" % line.x_value_float
+    if op == "pos_available":
+        text = mode
+    elif op in ("list_price", "standard_price"):
+        text = amount
+    elif op == "supplier_price":
+        text = "%s · %s" % (amount, ", ".join(line.x_supplier_ids.mapped("display_name")))
+    elif op == "pricelist_price":
+        names = ", ".join(line.x_pricelist_ids.mapped("display_name"))
+        text = ("Quitar de %s" % names) if line.x_mode == "remove" else ("%s en %s" % (amount, names))
+    elif op == "name":
+        text = "«%s» (%s)" % (line.x_value_char or "", line.x_lang_id.name or "todos los idiomas")
+    elif op in ("pos_categ", "pos_categories"):
+        text = "%s %s" % (mode, ", ".join(line.x_pos_categ_ids.mapped("display_name")))
+    elif op == "combos":
+        text = "%s %s" % (mode, ", ".join(line.x_combo_ids.mapped("display_name")))
+    else:
+        text = ""
+    line["x_summary"] = text
+]]></field>
+    </record>
+
+    <data noupdate="1">
+
+    <!-- ==== x_gn_launch_snapshot (written by the engine only) ==== -->
+    <record id="model_x_gn_launch_snapshot" model="ir.model">
+        <field name="name">Valor anterior de lanzamiento</field>
+        <field name="model">x_gn_launch_snapshot</field>
+        <field name="state">manual</field>
+        <field name="field_id" eval="[
+            (0, 0, {'name': 'x_launch_id', 'field_description': 'Lanzamiento', 'ttype': 'many2one',
+                    'relation': 'x_gn_launch', 'on_delete': 'cascade', 'required': True, 'index': True,
+                    'state': 'manual'}),
+            (0, 0, {'name': 'x_kind', 'field_description': 'Tipo', 'ttype': 'selection',
+                    'selection': &quot;[('write', 'Valor cambiado'), ('created', 'Línea de tarifa creada'), ('deleted', 'Línea de tarifa borrada')]&quot;,
+                    'state': 'manual'}),
+            (0, 0, {'name': 'x_model', 'field_description': 'Modelo', 'ttype': 'char', 'state': 'manual'}),
+            (0, 0, {'name': 'x_res_id', 'field_description': 'ID del registro', 'ttype': 'integer', 'state': 'manual'}),
+            (0, 0, {'name': 'x_record_name', 'field_description': 'Registro', 'ttype': 'char', 'state': 'manual'}),
+            (0, 0, {'name': 'x_field', 'field_description': 'Campo', 'ttype': 'char', 'state': 'manual'}),
+            (0, 0, {'name': 'x_value_type', 'field_description': 'Tipo de valor', 'ttype': 'selection',
+                    'selection': &quot;[('float', 'Número'), ('bool', 'Sí/No'), ('text', 'Texto'), ('ids', 'Lista')]&quot;,
+                    'state': 'manual'}),
+            (0, 0, {'name': 'x_lang', 'field_description': 'Idioma', 'ttype': 'char', 'state': 'manual'}),
+            (0, 0, {'name': 'x_old_float', 'field_description': 'Número anterior', 'ttype': 'float', 'state': 'manual'}),
+            (0, 0, {'name': 'x_old_bool', 'field_description': 'Sí/No anterior', 'ttype': 'boolean', 'state': 'manual'}),
+            (0, 0, {'name': 'x_old_text', 'field_description': 'Texto anterior', 'ttype': 'text', 'state': 'manual'}),
+            (0, 0, {'name': 'x_old_ids', 'field_description': 'Lista anterior (ids)', 'ttype': 'char', 'state': 'manual'}),
+            (0, 0, {'name': 'x_pricelist_id', 'field_description': 'Tarifa (id)', 'ttype': 'integer', 'state': 'manual'}),
+            (0, 0, {'name': 'x_product_tmpl_id', 'field_description': 'Producto (id)', 'ttype': 'integer', 'state': 'manual'}),
+        ]"/>
+    </record>
+
+    <!-- ==== one2many fields + default orders (need the fields above) ==== -->
+    <record id="model_x_gn_launch" model="ir.model">
+        <field name="field_id" eval="[
+            (0, 0, {'name': 'x_line_ids', 'field_description': 'Cambios', 'ttype': 'one2many',
+                    'relation': 'x_gn_launch_line', 'relation_field': 'x_launch_id',
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_snapshot_ids', 'field_description': 'Valores anteriores', 'ttype': 'one2many',
+                    'relation': 'x_gn_launch_snapshot', 'relation_field': 'x_launch_id',
+                    'readonly': True, 'state': 'manual', 'copied': False}),
+        ]"/>
+        <field name="order">x_scheduled_at desc, id desc</field>
+    </record>
+    <record id="model_x_gn_launch_line" model="ir.model">
+        <field name="order">x_sequence, id</field>
+    </record>
+
+    </data>
+</odoo>

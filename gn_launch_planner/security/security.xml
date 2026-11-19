@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Launches: internal users create and edit; POS managers and admins can delete -->
+    <record id="access_launch_user" model="ir.model.access">
+        <field name="name">x_gn_launch user</field>
+        <field name="model_id" ref="model_x_gn_launch"/>
+        <field name="group_id" ref="base.group_user"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="access_launch_pos_manager" model="ir.model.access">
+        <field name="name">x_gn_launch pos manager</field>
+        <field name="model_id" ref="model_x_gn_launch"/>
+        <field name="group_id" ref="point_of_sale.group_pos_manager"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="access_launch_system" model="ir.model.access">
+        <field name="name">x_gn_launch system</field>
+        <field name="model_id" ref="model_x_gn_launch"/>
+        <field name="group_id" ref="base.group_system"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Lines: editable (and removable) while the launch is a draft -->
+    <record id="access_line_user" model="ir.model.access">
+        <field name="name">x_gn_launch_line user</field>
+        <field name="model_id" ref="model_x_gn_launch_line"/>
+        <field name="group_id" ref="base.group_user"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Snapshots: written only by the engine (sudo); users just read them -->
+    <record id="access_snapshot_user" model="ir.model.access">
+        <field name="name">x_gn_launch_snapshot user</field>
+        <field name="model_id" ref="model_x_gn_launch_snapshot"/>
+        <field name="group_id" ref="base.group_user"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="access_snapshot_system" model="ir.model.access">
+        <field name="name">x_gn_launch_snapshot system</field>
+        <field name="model_id" ref="model_x_gn_launch_snapshot"/>
+        <field name="group_id" ref="base.group_system"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Each user sees the launches of the companies they have selected -->
+    <record id="rule_launch_company" model="ir.rule">
+        <field name="name">Lanzamientos: compañías permitidas</field>
+        <field name="model_id" ref="model_x_gn_launch"/>
+        <field name="domain_force">[('x_company_id', 'in', company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+</odoo>

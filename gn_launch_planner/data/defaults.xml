@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Global defaults (no company): a launch created from any company, UK included,
+         starts as an active draft -->
+    <record id="default_launch_state" model="ir.default">
+        <field name="field_id" search="[('model', '=', 'x_gn_launch'), ('name', '=', 'x_state')]"/>
+        <field name="json_value">"draft"</field>
+    </record>
+    <record id="default_launch_active" model="ir.default">
+        <field name="field_id" search="[('model', '=', 'x_gn_launch'), ('name', '=', 'x_active')]"/>
+        <field name="json_value">true</field>
+    </record>
+    <record id="default_line_sequence" model="ir.default">
+        <field name="field_id" search="[('model', '=', 'x_gn_launch_line'), ('name', '=', 'x_sequence')]"/>
+        <field name="json_value">10</field>
+    </record>
+</odoo>

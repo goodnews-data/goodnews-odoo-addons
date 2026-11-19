@@ -1,0 +1,449 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Engine. One server action with three modes (context gn_mode):
+           check  validate `records`, raise one UserError with every problem
+           run    apply every scheduled launch whose date/time has passed
+           undo   restore the previous values of `records` (done launches)
+         Called by the buttons and by the cron, never shown in menus.
+         ============================================================ -->
+    <record id="action_engine" model="ir.actions.server">
+        <field name="name">Lanzamientos: motor</field>
+        <field name="model_id" ref="model_x_gn_launch"/>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+# ============================================================
+# GoodNews launch planner engine (gn_launch_planner)
+# Safe-eval rules: no imports, no `with`, no dunders.
+# Isolation: in "run" mode every launch is committed on its own;
+# on error the whole launch is rolled back and marked as Error.
+# ============================================================
+MODE = env.context.get("gn_mode")
+Launch = env["x_gn_launch"].sudo()
+Snap = env["x_gn_launch_snapshot"].sudo()
+now = datetime.datetime.now()
+
+PRODUCT_OPS = ("pos_available", "list_price", "standard_price", "name", "pos_categ", "combos",
+               "pricelist_price", "supplier_price", "archive", "unarchive")
+POS_OPS = ("pos_categories",)
+LIST_MODES = ("add", "remove", "replace")
+AMOUNT_OPS = ("list_price", "standard_price", "supplier_price")
+OP_LABELS = {
+    "pos_available": "Disponible en TPV",
+    "list_price": "Precio de venta",
+    "standard_price": "Coste",
+    "name": "Nombre del producto",
+    "pos_categ": "Categoría del TPV del producto",
+    "combos": "Combinaciones del producto",
+    "pricelist_price": "Precio en tarifa",
+    "supplier_price": "Precio de proveedor",
+    "archive": "Archivar productos",
+    "unarchive": "Recuperar productos archivados",
+    "pos_categories": "Categorías visibles en el punto de venta",
+}
+
+
+def products_of(launch):
+    # Archived products must be visible too (for "Recuperar productos archivados")
+    return launch.with_context(active_test=False).x_product_ids.sudo().with_context(
+        active_test=False).with_company(launch.x_company_id)
+
+
+def pos_of(launch):
+    return launch.x_pos_ids.sudo().with_company(launch.x_company_id)
+
+
+def ids_text(recs):
+    return ",".join([str(i) for i in recs.ids])
+
+
+def check(launch):
+    problems = []
+    company = launch.x_company_id
+    if not company:
+        problems.append("Falta la compañía.")
+    if not launch.x_scheduled_at:
+        problems.append("Falta la fecha y hora.")
+    lines = launch.x_line_ids.sorted("x_sequence")
+    if not lines:
+        problems.append("No hay ningún cambio: añade al menos una línea en «Cambios».")
+    products = products_of(launch)
+    bad_products = products.filtered_domain([("company_id", "!=", False), ("company_id", "!=", company.id)])
+    if bad_products:
+        problems.append("Productos de otra compañía: %s." % ", ".join(bad_products.mapped("display_name")))
+    bad_pos = launch.x_pos_ids.filtered_domain([("company_id", "!=", company.id)])
+    if bad_pos:
+        problems.append("Puntos de venta de otra compañía: %s." % ", ".join(bad_pos.mapped("display_name")))
+    n = 0
+    for line in lines:
+        n += 1
+        op = line.x_operation
+        label = "Línea %s (%s)" % (n, OP_LABELS.get(op, op or "sin tipo"))
+        if not op:
+            problems.append("%s: elige qué cambia." % label)
+            continue
+        if op in PRODUCT_OPS and not products:
+            problems.append("%s: elige los productos en «Productos y tiendas»." % label)
+        if op in POS_OPS and not launch.x_pos_ids:
+            problems.append("%s: elige los puntos de venta en «Productos y tiendas»." % label)
+        if op == "pos_available" and line.x_mode not in ("on", "off"):
+            problems.append("%s: en «Cómo» elige Activar o Desactivar." % label)
+        if op in ("pos_categ", "combos", "pos_categories") and line.x_mode not in LIST_MODES:
+            problems.append("%s: en «Cómo» elige Añadir, Quitar o Sustituir por." % label)
+        if op == "pricelist_price" and line.x_mode not in ("set", "remove"):
+            problems.append("%s: en «Cómo» elige Poner precio o Quitar." % label)
+        if op in ("pos_categ", "pos_categories") and not line.x_pos_categ_ids:
+            problems.append("%s: elige las categorías del TPV." % label)
+        if op == "combos" and not line.x_combo_ids:
+            problems.append("%s: elige las combinaciones." % label)
+        if op == "name" and not (line.x_value_char or "").strip():
+            problems.append("%s: escribe el nombre nuevo." % label)
+        if op == "pricelist_price":
+            if not line.x_pricelist_ids:
+                problems.append("%s: elige las tarifas." % label)
+            other = line.x_pricelist_ids.filtered_domain([("company_id", "!=", False), ("company_id", "!=", company.id)])
+            if other:
+                problems.append("%s: tarifas de otra compañía: %s." % (
+                    label, ", ".join(other.mapped("display_name"))))
+        if op == "supplier_price" and not line.x_supplier_ids:
+            problems.append("%s: elige los proveedores." % label)
+        needs_amount = op in AMOUNT_OPS or (op == "pricelist_price" and line.x_mode == "set")
+        if needs_amount:
+            if line.x_value_float < 0:
+                problems.append("%s: el importe no puede ser negativo." % label)
+            elif not line.x_value_float and not line.x_allow_zero:
+                problems.append("%s: el importe es 0. Si es a propósito, marca «Importe 0 a propósito»." % label)
+    return problems
+
+
+def snap(launch, rec, field, vtype, lang=False):
+    vals = {
+        "x_launch_id": launch.id, "x_kind": "write", "x_model": rec._name, "x_res_id": rec.id,
+        "x_record_name": rec.display_name, "x_field": field, "x_value_type": vtype,
+        "x_lang": lang or False,
+    }
+    if vtype == "ids":
+        vals["x_old_ids"] = ids_text(rec[field])
+    elif vtype == "float":
+        vals["x_old_float"] = rec[field]
+    elif vtype == "bool":
+        vals["x_old_bool"] = bool(rec[field])
+    else:
+        vals["x_old_text"] = rec[field] or ""
+    Snap.create(vals)
+
+
+def apply_list(launch, recs, field, new_ids, mode, keep_start=False):
+    changed = 0
+    for rec in recs:
+        current = set(rec[field].ids)
+        if mode == "add":
+            final = current | new_ids
+        elif mode == "remove":
+            final = current - new_ids
+        else:
+            final = set(new_ids)
+        if keep_start and rec.iface_start_categ_id:
+            final.add(rec.iface_start_categ_id.id)
+        if final != current:
+            snap(launch, rec, field, "ids")
+            rec.write({field: [(6, 0, list(final))]})
+            changed += 1
+    return changed
+
+
+def apply_line(launch, line):
+    op = line.x_operation
+    label = OP_LABELS.get(op, op)
+    company = launch.x_company_id
+    products = products_of(launch)
+    value = line.x_value_float
+
+    if op == "pos_available":
+        target = line.x_mode == "on"
+        recs = products.filtered_domain([("available_in_pos", "!=", target)])
+        for rec in recs:
+            snap(launch, rec, "available_in_pos", "bool")
+        recs.write({"available_in_pos": target})
+        return "✔ %s = %s: %s de %s productos cambiados." % (
+            label, "sí" if target else "no", len(recs), len(products))
+
+    if op in ("archive", "unarchive"):
+        target = op == "unarchive"
+        recs = products.filtered_domain([("active", "!=", target)])
+        for rec in recs:
+            snap(launch, rec, "active", "bool")
+        recs.write({"active": target})
+        return "✔ %s: %s de %s productos." % (label, len(recs), len(products))
+
+    if op == "list_price":
+        for rec in products:
+            snap(launch, rec, "list_price", "float")
+        products.write({"list_price": value})
+        return "✔ %s → %.2f en %s productos." % (label, value, len(products))
+
+    if op == "standard_price":
+        # Cost is per company and per variant: write the variants of the launch company
+        variants = products.mapped("product_variant_ids")
+        for rec in variants:
+            snap(launch, rec, "standard_price", "float")
+        variants.write({"standard_price": value})
+        return "✔ %s → %.2f en %s variantes (%s)." % (label, value, len(variants), company.name)
+
+    if op == "name":
+        new_name = line.x_value_char.strip()
+        if line.x_lang_id:
+            codes = [line.x_lang_id.code]
+        else:
+            codes = [code_name[0] for code_name in env["res.lang"].get_installed()]
+        for rec in products:
+            for code in codes:
+                snap(launch, rec.with_context(lang=code), "name", "text", code)
+        for code in codes:
+            products.with_context(lang=code).write({"name": new_name})
+        return "✔ %s → «%s» en %s productos (%s)." % (label, new_name, len(products), ", ".join(codes))
+
+    if op == "pos_categ":
+        changed = apply_list(launch, products, "pos_categ_ids", set(line.x_pos_categ_ids.ids), line.x_mode)
+        return "✔ %s: %s de %s productos cambiados." % (label, changed, len(products))
+
+    if op == "combos":
+        changed = apply_list(launch, products, "combo_ids", set(line.x_combo_ids.ids), line.x_mode)
+        return "✔ %s: %s de %s productos cambiados." % (label, changed, len(products))
+
+    if op == "pos_categories":
+        configs = pos_of(launch)
+        changed = apply_list(launch, configs, "iface_available_categ_ids", set(line.x_pos_categ_ids.ids),
+                             line.x_mode, keep_start=True)
+        loose = configs.filtered_domain([("limit_categories", "=", False)])
+        note = ""
+        if loose:
+            note = " Ojo: %s no tiene activado «Restringir categorías», así que la lista no limita nada." % (
+                ", ".join(loose.mapped("name")))
+        return "✔ %s: %s de %s puntos de venta cambiados.%s" % (label, changed, len(configs), note)
+
+    if op == "pricelist_price":
+        Item = env["product.pricelist.item"].sudo()
+        created = updated = removed = 0
+        for pricelist in line.x_pricelist_ids:
+            for rec in products:
+                items = Item.search([
+                    ("pricelist_id", "=", pricelist.id), ("applied_on", "=", "1_product"),
+                    ("product_tmpl_id", "=", rec.id), ("compute_price", "=", "fixed"),
+                    ("date_start", "=", False), ("date_end", "=", False), ("min_quantity", "<=", 1),
+                ])
+                if line.x_mode == "remove":
+                    for item in items:
+                        Snap.create({
+                            "x_launch_id": launch.id, "x_kind": "deleted", "x_model": "product.pricelist.item",
+                            "x_res_id": item.id, "x_record_name": "%s · %s" % (pricelist.name, rec.display_name),
+                            "x_field": "fixed_price", "x_value_type": "float", "x_old_float": item.fixed_price,
+                            "x_pricelist_id": pricelist.id, "x_product_tmpl_id": rec.id,
+                        })
+                        removed += 1
+                    items.unlink()
+                elif items:
+                    for item in items:
+                        snap(launch, item, "fixed_price", "float")
+                    items.write({"fixed_price": value})
+                    updated += len(items)
+                else:
+                    item = Item.create({
+                        "pricelist_id": pricelist.id, "applied_on": "1_product", "product_tmpl_id": rec.id,
+                        "compute_price": "fixed", "fixed_price": value, "min_quantity": 0,
+                    })
+                    Snap.create({
+                        "x_launch_id": launch.id, "x_kind": "created", "x_model": "product.pricelist.item",
+                        "x_res_id": item.id, "x_record_name": "%s · %s" % (pricelist.name, rec.display_name),
+                        "x_field": "fixed_price", "x_value_type": "float",
+                    })
+                    created += 1
+        if line.x_mode == "remove":
+            return "✔ %s: %s precios quitados de %s tarifas." % (label, removed, len(line.x_pricelist_ids))
+        return "✔ %s → %.2f: %s actualizados y %s nuevos en %s tarifas." % (
+            label, value, updated, created, len(line.x_pricelist_ids))
+
+    if op == "supplier_price":
+        infos = env["product.supplierinfo"].sudo().search([
+            ("product_tmpl_id", "in", products.ids),
+            ("partner_id", "in", line.x_supplier_ids.ids),
+            ("company_id", "in", [False, company.id]),
+        ])
+        if not infos:
+            raise UserError("%s: ninguno de los productos tiene precio de %s (compañía: %s)" % (
+                label, ", ".join(line.x_supplier_ids.mapped("display_name")), company.name))
+        for info in infos:
+            snap(launch, info, "price", "float")
+        infos.write({"price": value})
+        missing = products - infos.mapped("product_tmpl_id")
+        note = ""
+        if missing:
+            note = " Sin precio de ese proveedor (no se tocan): %s." % ", ".join(missing.mapped("display_name"))
+        return "✔ %s → %.2f en %s líneas de proveedor.%s" % (label, value, len(infos), note)
+
+    raise UserError("Tipo de cambio desconocido: %s" % op)
+
+
+# ---------------- check ----------------
+if MODE == "check":
+    messages = []
+    for launch in records:
+        problems = check(launch.sudo())
+        if problems:
+            messages.append("%s:\n- %s" % (launch.x_name, "\n- ".join(problems)))
+    if messages:
+        raise UserError("Revisa el lanzamiento antes de programarlo.\n\n" + "\n\n".join(messages))
+
+# ---------------- run ----------------
+elif MODE == "run":
+    due = Launch.search([("x_state", "=", "scheduled"), ("x_scheduled_at", "<=", now)],
+                        order="x_scheduled_at, id")
+    for launch_id in due.ids:
+        launch = Launch.browse(launch_id)
+        try:
+            problems = check(launch)
+            if problems:
+                raise UserError("\n".join(problems))
+            result = []
+            for line in launch.x_line_ids.sorted("x_sequence"):
+                result.append(apply_line(launch, line))
+            launch.write({"x_state": "done", "x_executed_at": now, "x_log": "\n".join(result)})
+            launch.message_post(body="Lanzamiento aplicado: %s cambios. Detalle en la pestaña «Resultado»." % len(result))
+            env.cr.commit()
+        except Exception as e:
+            # Nothing of this launch stays applied: drop the cache, roll back, mark it as Error
+            env.invalidate_all(flush=False)
+            env.cr.rollback()
+            env.invalidate_all(flush=False)
+            launch = Launch.browse(launch_id)
+            launch.write({
+                "x_state": "error", "x_executed_at": now,
+                "x_log": "No se ha aplicado ningún cambio de este lanzamiento.\n\n%s" % e,
+            })
+            launch.message_post(body="El lanzamiento ha fallado y no se ha aplicado nada. Motivo en la pestaña «Resultado».")
+            env.cr.commit()
+
+# ---------------- undo ----------------
+elif MODE == "undo":
+    for launch in records.sudo():
+        if launch.x_state != "done":
+            raise UserError("Solo se puede deshacer un lanzamiento en estado Hecho (%s)." % launch.x_name)
+        company = launch.x_company_id
+        Item = env["product.pricelist.item"].sudo()
+        restored = 0
+        for s in launch.x_snapshot_ids.sorted("id", reverse=True):
+            if s.x_kind == "created":
+                item = Item.browse(s.x_res_id).exists()
+                if item:
+                    item.unlink()
+                    restored += 1
+                continue
+            if s.x_kind == "deleted":
+                Item.create({
+                    "pricelist_id": s.x_pricelist_id, "applied_on": "1_product",
+                    "product_tmpl_id": s.x_product_tmpl_id, "compute_price": "fixed",
+                    "fixed_price": s.x_old_float, "min_quantity": 0,
+                })
+                restored += 1
+                continue
+            rec = env[s.x_model].sudo().with_context(active_test=False).with_company(company).browse(s.x_res_id).exists()
+            if not rec:
+                continue
+            if s.x_lang:
+                rec = rec.with_context(lang=s.x_lang)
+            if s.x_value_type == "ids":
+                old = [int(i) for i in (s.x_old_ids or "").split(",") if i]
+                value = [(6, 0, old)]
+            elif s.x_value_type == "float":
+                value = s.x_old_float
+            elif s.x_value_type == "bool":
+                value = s.x_old_bool
+            else:
+                value = s.x_old_text
+            rec.write({s.x_field: value})
+            restored += 1
+        launch.write({
+            "x_state": "undone",
+            "x_log": (launch.x_log or "") + "\n\n↩ Deshecho el %s: %s valores restaurados." % (
+                now.strftime("%d/%m/%Y %H:%M UTC"), restored),
+        })
+        launch.message_post(body="Lanzamiento deshecho: %s valores restaurados." % restored)
+]]></field>
+    </record>
+
+    <!-- ============================================================
+         Button actions (form header)
+         ============================================================ -->
+    <record id="action_schedule" model="ir.actions.server">
+        <field name="name">Programar</field>
+        <field name="model_id" ref="model_x_gn_launch"/>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+env.ref("gn_launch_planner.action_engine").with_context(
+    active_model="x_gn_launch", active_ids=records.ids, active_id=records[:1].id, gn_mode="check").run()
+records.write({"x_state": "scheduled"})
+]]></field>
+    </record>
+
+    <record id="action_launch_now" model="ir.actions.server">
+        <field name="name">Lanzar ya</field>
+        <field name="model_id" ref="model_x_gn_launch"/>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+env.ref("gn_launch_planner.action_engine").with_context(
+    active_model="x_gn_launch", active_ids=records.ids, active_id=records[:1].id, gn_mode="check").run()
+records.write({"x_state": "scheduled", "x_scheduled_at": datetime.datetime.now()})
+env.ref("gn_launch_planner.cron_launches").sudo()._trigger()
+action = {
+    "type": "ir.actions.client",
+    "tag": "display_notification",
+    "params": {
+        "title": "Lanzamiento en marcha",
+        "message": "Se aplica en el próximo minuto. Recarga la ficha para ver el resultado.",
+        "type": "success",
+        "sticky": False,
+        "next": {"type": "ir.actions.client", "tag": "soft_reload"},
+    },
+}
+]]></field>
+    </record>
+
+    <record id="action_to_draft" model="ir.actions.server">
+        <field name="name">Volver a borrador</field>
+        <field name="model_id" ref="model_x_gn_launch"/>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+for launch in records:
+    if launch.x_state not in ("scheduled", "error"):
+        raise UserError("Solo vuelven a borrador los lanzamientos Programados o con Error.")
+records.write({"x_state": "draft"})
+]]></field>
+    </record>
+
+    <record id="action_undo" model="ir.actions.server">
+        <field name="name">Deshacer</field>
+        <field name="model_id" ref="model_x_gn_launch"/>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+env.ref("gn_launch_planner.action_engine").with_context(
+    active_model="x_gn_launch", active_ids=records.ids, active_id=records[:1].id, gn_mode="undo").run()
+]]></field>
+    </record>
+
+    <!-- ============================================================
+         Cron: every 5 minutes, applies launches whose time has come
+         ============================================================ -->
+    <record id="cron_launches" model="ir.cron">
+        <field name="name">Lanzamientos programados: aplicar</field>
+        <field name="model_id" ref="model_x_gn_launch"/>
+        <field name="state">code</field>
+        <field name="code">env.ref("gn_launch_planner.action_engine").with_context(gn_mode="run").run()</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="numbercall">-1</field>
+        <field name="doall" eval="False"/>
+        <field name="priority">5</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

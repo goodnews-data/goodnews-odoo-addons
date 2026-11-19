@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Lanzamientos programados">
+  <!-- GoodNews line-art: launch calendar page with a clock and a price tag -->
+  <g fill="none" stroke="#5b6a43" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- calendar page -->
+    <path d="M18 30 Q40 29.4 62 30 Q74 29.6 80 30 Q81 52 80 74 Q79.6 90 80 98 Q50 98.6 18 98 Q17.4 64 18 30 Z"/>
+    <path d="M18 44 Q50 43.4 80 44"/>
+    <!-- rings -->
+    <path d="M32 24 L32 36"/>
+    <path d="M66 24 L66 36"/>
+    <!-- day grid -->
+    <path d="M30 56 L36 56 M44 56 L50 56 M58 56 L64 56"/>
+    <path d="M30 68 L36 68 M44 68 L50 68"/>
+    <path d="M30 80 L36 80"/>
+    <!-- circled launch day -->
+    <path d="M56 68 Q57 61.5 62 62 Q68 62.5 67.5 68 Q67 74 61.5 73.8 Q56 73.4 56 68 Z"/>
+    <!-- clock -->
+    <path d="M84 70 Q84.5 56 98 56 Q111.5 56.5 111 70 Q110.5 84 97.5 84 Q84 83.5 84 70 Z"/>
+    <path d="M97.5 62 L97.5 70 L103 74"/>
+    <!-- price tag hanging from the page -->
+    <path d="M44 98 L44 104 Q44 108 48 108 L58 108 Q62 108 62 104 L62 98"/>
+    <path d="M51.5 102.5 L54.5 102.5"/>
+    <!-- GoodNews wink: sparkle -->
+    <path d="M100 30 L100 40 M95 35 L105 35"/>
+    <path d="M110 46 L110 50 M108 48 L112 48"/>
+  </g>
+</svg>

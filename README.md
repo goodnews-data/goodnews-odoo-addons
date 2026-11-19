@@ -13,6 +13,7 @@ migraciones sin rehacerlo a mano.
 | Módulo | Odoo | Qué hace |
 |---|---|---|
 | [`gn_vendor_transition_uom`](gn_vendor_transition_uom/) | 17.0 | UdM de compra por proveedor y cambio a UdM de transición desde la recepción. |
+| [`gn_launch_planner`](gn_launch_planner/) | 17.0 | Lanzamientos programados por fecha y hora (precios, TPV, categorías, combos, tarifas, nombres, archivar), con validación y Deshacer. Sustituye al «Planificador Master Data» de Studio. |
 
 ## Convención
 
