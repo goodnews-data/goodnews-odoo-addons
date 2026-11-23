@@ -16,7 +16,7 @@ migraciones sin rehacerlo a mano.
 | [`gn_base`](gn_base/) | 17.0 | Lo compartido: grupos Supply y Data, y el almacén asignado de cada usuario. Va antes que el resto. |
 | [`gn_inventory_planner`](gn_inventory_planner/) | 17.0 | Planificador de inventario: recuentos cíclicos por tienda y grupo de productos, con historial. Lógica (botones, acciones, vistas, permisos). **En producción desde el 23/11/2026.** |
 | [`gn_inventory_planner_base`](gn_inventory_planner_base/) | 17.0 | Modelos y campos del planificador. Solo para una base nueva o migrada. |
-| [`gn_valijas`](gn_valijas/) | 17.0 | Valijas de los centrales de España: «Programar valija» y validación sola de noche, sin pendiente. Probado en test el 23/11/2026; en producción, pendiente de instalar. |
+| [`gn_valijas`](gn_valijas/) | 17.0 | Valijas de los centrales de España: «Programar valija» y validación sola de noche, sin pendiente. En producción desde el 23/11/2026. |
 | [`gn_valijas_base`](gn_valijas_base/) | 17.0 | Campos de las valijas. Solo para una base nueva o migrada. |
 
 ## Convención
