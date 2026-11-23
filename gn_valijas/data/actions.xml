@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Programar valija: schedule the selected transfers for the night
+         validation. Only Spanish companies (by company country).
+         Safe-eval rules (Odoo 17): no imports, no `with`, no lambdas with
+         closures, no dunders.
+         ============================================================ -->
+    <record id="action_schedule" model="ir.actions.server">
+        <field name="name">Programar valija</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="binding_model_id" ref="stock.model_stock_picking"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+# =====================================================================
+# Schedule the auto-validation of the selected transfers (valijas).
+# The validation datetime is "now", EXCEPT on Friday (local time): then it
+# is Sunday 08:00, so the night run validates it on Sunday night, before
+# Monday's delivery (wanted, Isabella 23/11/2026).
+# Phase 1 checks every transfer, phase 2 writes: nothing is written unless
+# all of them are valid.
+# =====================================================================
+TZ_LOCAL = timezone('Europe/Madrid')
+TZ_UTC = timezone('UTC')
+DEFER_WEEKDAYS = [4]              # 0=Mon ... 4=Fri
+TARGET_WEEKDAY = 6                # Sunday
+TARGET_HOUR = 8
+ALLOWED_STATES = ['assigned', 'confirmed', 'waiting']
+TRACKED_TYPES = ['lot', 'serial']
+COUNTRY = 'ES'                    # valijas only exist in Spain
+DATE_FMT = '%d/%m/%Y %H:%M'
+
+now_utc = datetime.datetime.utcnow().replace(microsecond=0)
+now_local = TZ_UTC.localize(now_utc).astimezone(TZ_LOCAL)
+is_deferred = now_local.weekday() in DEFER_WEEKDAYS
+if is_deferred:
+    days_ahead = (TARGET_WEEKDAY - now_local.weekday() + 7) % 7 or 7
+    target_day = now_local + datetime.timedelta(days=days_ahead)
+    target_naive = datetime.datetime(target_day.year, target_day.month, target_day.day, TARGET_HOUR, 0, 0)
+    validation_date = TZ_LOCAL.localize(target_naive).astimezone(TZ_UTC).replace(tzinfo=None)
+else:
+    validation_date = now_utc
+validation_label = TZ_UTC.localize(validation_date).astimezone(TZ_LOCAL).strftime(DATE_FMT)
+
+# ---- Phase 1: check everything, write nothing
+errors = []
+for picking in records:
+    if (picking.company_id.country_id.code or '') != COUNTRY:
+        errors.append('%s: las valijas solo existen en España (compañía %s).' % (picking.name, picking.company_id.name))
+        continue
+    if picking.x_studio_validation_date:
+        errors.append('%s: ya está programada (%s).' % (
+            picking.name, TZ_UTC.localize(picking.x_studio_validation_date).astimezone(TZ_LOCAL).strftime(DATE_FMT)))
+        continue
+    if picking.state not in ALLOWED_STATES:
+        errors.append("%s: en estado '%s' no se puede programar." % (picking.name, picking.state))
+        continue
+    useful = False
+    missing_lots = []
+    for move in picking.move_ids_without_package:
+        if float_compare(move.quantity, 0.0, precision_rounding=move.product_uom.rounding) <= 0:
+            continue
+        useful = True
+        if move.product_id.tracking in TRACKED_TYPES and not move.move_line_ids.filtered_domain(['|', ('lot_id', '!=', False), ('lot_name', '!=', False)]):
+            missing_lots.append(move.product_id.display_name)
+    if not useful:
+        errors.append('%s: todas las líneas están a 0, no hay nada preparado.' % picking.name)
+        continue
+    if missing_lots:
+        errors.append('%s: falta lote o serie en %s.' % (picking.name, ', '.join(sorted(set(missing_lots)))))
+if errors:
+    raise UserError('No se ha programado nada. Revisa:\n\n• ' + '\n• '.join(errors))
+
+# ---- Phase 2: align demand to what is prepared, drop empty lines, schedule, note
+for picking in records:
+    empty = env['stock.move']
+    for move in picking.move_ids_without_package:
+        rounding = move.product_uom.rounding
+        if float_compare(move.quantity, 0.0, precision_rounding=rounding) == 0:
+            empty |= move
+        elif float_compare(move.quantity, move.product_uom_qty, precision_rounding=rounding) != 0:
+            move.write({'product_uom_qty': move.quantity})
+    if empty:
+        empty._action_cancel()
+        empty.unlink()
+    picking.write({
+        'x_studio_scheduled': True,
+        'x_studio_locked': True,
+        'x_studio_validation_date': validation_date,
+    })
+    note = ('📌 Valija programada. Se validará sola esta noche con lo que está preparado, sin crear pendiente.<br/>'
+            'Fecha de autovalidación: <b>%s</b>' % validation_label)
+    if is_deferred:
+        note += '<br/><i>Programada en viernes: se valida el domingo por la noche, antes de la entrega del lunes.</i>'
+    picking.sudo().message_post(body=note, body_is_html=True, subtype_xmlid='mail.mt_note')
+]]></field>
+    </record>
+
+    <!-- ============================================================
+         Validation engine.
+           cron (no gn_manual)  every scheduled valija whose date has passed
+           gn_manual=True       the selected scheduled valijas, now (button
+                                "Validar ahora")
+         Each valija is validated on its own (savepoint): one that fails is
+         rolled back completely, gets a note in its chatter and the others
+         go on.
+         ============================================================ -->
+    <record id="action_validate" model="ir.actions.server">
+        <field name="name">Valijas: validar</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+# =====================================================================
+# Validate scheduled valijas with what is prepared (reserved), without
+# backorder: each line is reduced to its prepared quantity, lines with
+# nothing prepared are removed, and the transfer is validated.
+# =====================================================================
+MANUAL = bool(env.context.get('gn_manual'))
+STATES = ['assigned', 'confirmed', 'waiting']
+MAX_PICKINGS = 30                  # per night run
+LOOKBACK_DAYS = 30                 # only transfers created in the last 30 days
+SAVEPOINT = 'gn_valija'
+
+now = datetime.datetime.utcnow()
+Picking = env['stock.picking'].sudo()
+
+if MANUAL:
+    pickings = records.sudo().filtered_domain([
+        ('x_studio_scheduled', '=', True), ('x_studio_locked', '=', True), ('state', 'in', STATES)])
+    if not pickings:
+        raise UserError('Ninguna de las transferencias seleccionadas está programada (botón «Programar valija»).')
+else:
+    pickings = Picking.search([
+        ('x_studio_scheduled', '=', True),
+        ('x_studio_locked', '=', True),
+        ('state', 'in', STATES),
+        ('x_studio_validation_date', '!=', False),
+        ('x_studio_validation_date', '<=', now),
+        ('create_date', '>=', now - datetime.timedelta(days=LOOKBACK_DAYS)),
+    ], order='x_studio_validation_date asc, create_date asc, id asc', limit=MAX_PICKINGS)
+
+done = []
+failed = []
+for picking in pickings:
+    name = picking.name
+    env.cr.execute('SAVEPOINT ' + SAVEPOINT)
+    try:
+        if picking.state in ('confirmed', 'waiting'):
+            picking.action_assign()
+        empty = env['stock.move'].sudo()
+        prepared = False
+        for move in picking.move_ids:
+            rounding = move.product_uom.rounding
+            if float_compare(move.quantity, 0.0, precision_rounding=rounding) <= 0:
+                empty |= move
+                continue
+            prepared = True
+            if float_compare(move.quantity, move.product_uom_qty, precision_rounding=rounding) != 0:
+                move.write({'product_uom_qty': move.quantity})
+        if not prepared:
+            raise UserError('no hay nada preparado (ninguna cantidad reservada)')
+        if empty:
+            empty._action_cancel()
+            empty.unlink()
+        res = picking.button_validate()
+        if isinstance(res, dict) and res.get('res_model'):
+            raise UserError('Odoo pide confirmar «%s»' % res.get('res_model'))
+        if picking.state != 'done':
+            raise UserError("no ha quedado hecha (estado '%s')" % picking.state)
+        picking.write({'x_studio_scheduled': False, 'x_studio_locked': False})
+        env.cr.execute('RELEASE SAVEPOINT ' + SAVEPOINT)
+        done.append(name)
+    except Exception as error:
+        env.cr.execute('ROLLBACK TO SAVEPOINT ' + SAVEPOINT)
+        env.invalidate_all()
+        failed.append('%s: %s' % (name, error))
+        log('Valija %s not validated: %s' % (name, error), level='error')
+        Picking.browse(picking.id).message_post(
+            body='⚠️ Esta valija no se ha podido validar sola: %s. Revísala y valídala a mano (lo revisa Data).' % error,
+            subtype_xmlid='mail.mt_note')
+
+if done or failed:
+    log('Valijas: %s validated, %s failed' % (len(done), len(failed)), level='info')
+if MANUAL:
+    action = {
+        'type': 'ir.actions.client',
+        'tag': 'display_notification',
+        'params': {
+            'title': 'Valijas',
+            'message': ('Validadas: %s.' % (', '.join(done) or 'ninguna')) + (('  No validadas: ' + '; '.join(failed)) if failed else ''),
+            'type': 'warning' if failed else 'success',
+            'sticky': bool(failed),
+            'next': {'type': 'ir.actions.act_window_close'},
+        },
+    }
+]]></field>
+    </record>
+
+    <record id="action_validate_now" model="ir.actions.server">
+        <field name="name">Validar valija ahora</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="binding_model_id" ref="stock.model_stock_picking"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+# Validate the selected scheduled valijas now (same rules as the night run)
+action = env.ref('gn_valijas.action_validate').with_context(
+    gn_manual=True, active_model='stock.picking', active_ids=records.ids).run()
+]]></field>
+    </record>
+
+    <!-- Night run. noupdate: an update of the module never moves its schedule. -->
+    <data noupdate="1">
+        <record id="cron_validate" model="ir.cron">
+            <field name="name">Valijas: validar las programadas</field>
+            <field name="model_id" ref="stock.model_stock_picking"/>
+            <field name="state">code</field>
+            <field name="code">env.ref('gn_valijas.action_validate').run()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="nextcall" eval="DateTime.now().strftime('%Y-%m-%d 22:00:00')"/>
+            <field name="doall" eval="False"/>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

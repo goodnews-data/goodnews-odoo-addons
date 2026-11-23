@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Transfer form: "Programar valija" / "Validar valija ahora" buttons
+         and the valija status. Spain only is checked by the action (company
+         country), not with company ids in the view.
+         ============================================================ -->
+    <record id="view_picking_form_valijas" model="ir.ui.view">
+        <field name="name">stock.picking.form.gn.valijas</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button string="Programar valija" name="%(action_schedule)d" type="action"
+                        invisible="x_studio_scheduled or state not in ('assigned', 'confirmed', 'waiting')"/>
+                <button string="Validar valija ahora" name="%(action_validate_now)d" type="action"
+                        invisible="not x_studio_scheduled or state in ('done', 'cancel')"
+                        confirm="Se valida ahora con lo que está preparado, sin crear pendiente. ¿Seguimos?"/>
+            </xpath>
+            <xpath expr="//field[@name='origin']" position="after">
+                <field name="x_studio_validation_date" readonly="1" invisible="not x_studio_validation_date"/>
+                <field name="x_studio_scheduled" readonly="1" invisible="not x_studio_scheduled"/>
+                <field name="x_studio_locked" readonly="1" invisible="not x_studio_locked"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Transfer search: filter the valijas waiting for the night run -->
+    <record id="view_picking_search_valijas" model="ir.ui.view">
+        <field name="name">stock.picking.search.gn.valijas</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_internal_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='available']" position="after">
+                <filter string="Valijas programadas" name="gn_valijas_scheduled" domain="[('x_studio_scheduled', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
