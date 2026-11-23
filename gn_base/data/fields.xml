@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Store locations assigned to each user (res.users).
+         Same technical names as the original Studio fields: the GN Tools
+         (Store App) and the inventory planner read them by name.
+           x_studio_assigned_warehouse  the store location the user counts
+                                        and receives in
+           x_studio_assigned_central    the central warehouse that supplies it
+         noupdate: created once; never rewritten on module update.
+         ============================================================ -->
+    <data noupdate="1">
+        <record id="field_res_users_x_studio_assigned_warehouse" model="ir.model.fields">
+            <field name="model_id" ref="base.model_res_users"/>
+            <field name="name">x_studio_assigned_warehouse</field>
+            <field name="field_description">Almacén asignado</field>
+            <field name="ttype">many2one</field>
+            <field name="relation">stock.location</field>
+            <field name="on_delete">set null</field>
+            <field name="state">manual</field>
+            <field name="copied" eval="True"/>
+            <field name="help">Ubicación de la tienda del usuario: recibe ahí los recuentos que pide el planificador de inventario y la Store App la usa como su almacén.</field>
+        </record>
+
+        <record id="field_res_users_x_studio_assigned_central" model="ir.model.fields">
+            <field name="model_id" ref="base.model_res_users"/>
+            <field name="name">x_studio_assigned_central</field>
+            <field name="field_description">Assigned central</field>
+            <field name="ttype">many2one</field>
+            <field name="relation">stock.location</field>
+            <field name="on_delete">set null</field>
+            <field name="state">manual</field>
+            <field name="copied" eval="True"/>
+            <field name="help">Almacén central que abastece a la tienda del usuario.</field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Inventory Planner
+         Location domain: internal locations only. The Studio view listed
+         ~30 location ids to hide; ids do not exist in another database,
+         so the list is not carried over.
+         ============================================================ -->
+    <record id="view_planner_form" model="ir.ui.view">
+        <field name="name">x_inventory_planner.form</field>
+        <field name="model">x_inventory_planner</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <form string="Inventory Planner">
+                <header>
+                    <button string="Asignar inventario" name="%(action_assign_now)d" type="action" class="btn-primary"
+                            confirm="Se piden ahora los recuentos de este planificador. Su calendario no cambia. ¿Seguimos?"/>
+                    <button string="Cancelar inventario" name="%(action_cancel_planner)d" type="action"
+                            confirm="Se cancelan los recuentos abiertos y el planificador se ARCHIVA: no se vuelve a ejecutar. ¿Seguimos?"/>
+                    <button string="Etiquetas de producto" name="%(action_open_groups)d" type="action"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" text="Archivado" bg_color="text-bg-danger" invisible="x_active"/>
+                    <field name="x_active" invisible="1"/>
+                    <div class="oe_title">
+                        <h1><field name="x_name" placeholder="Nombre..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="x_studio_frecuencia"/>
+                            <field name="x_studio_weekday"/>
+                            <field name="x_studio_date_planner" required="1"/>
+                            <field name="x_studio_etiquetas" widget="many2many_tags" required="1"
+                                   options="{'no_create': True}"
+                                   help="Qué productos se cuentan: los de estos grupos de inventario."/>
+                            <field name="x_studio_almacen_planner" widget="many2many_tags" required="1"
+                                   options="{'no_create': True}" domain="[('usage', '=', 'internal')]"
+                                   help="Ubicaciones donde se pide el recuento (una solicitud por ubicación)."/>
+                            <field name="x_studio_user_asignado" options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="x_studio_last_recount_request"
+                                   help="Última vez que el planificador pidió el recuento."/>
+                            <field name="x_studio_last_recount_request_time" invisible="1"/>
+                            <field name="x_studio_next_recount_date" readonly="1"
+                                   help="El recuento siguiente al de «Inventory date», según la frecuencia y el día de la semana."/>
+                            <field name="x_studio_company" widget="many2many_tags" required="1"
+                                   options="{'no_create': True}" domain="[('id', 'in', allowed_company_ids)]"/>
+                        </group>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                    <field name="activity_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_planner_tree" model="ir.ui.view">
+        <field name="name">x_inventory_planner.tree</field>
+        <field name="model">x_inventory_planner</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <tree string="Inventory Planner">
+                <header>
+                    <button string="Asignar inventario" name="%(action_assign_now)d" type="action"/>
+                    <button string="Cancelar inventario" name="%(action_cancel_planner)d" type="action"/>
+                    <button string="Etiquetas de producto" name="%(action_open_groups)d" type="action"/>
+                </header>
+                <field name="x_studio_sequence" widget="handle"/>
+                <field name="x_name"/>
+                <field name="x_studio_frecuencia" optional="show"/>
+                <field name="x_studio_date_planner" optional="show"/>
+                <field name="x_studio_etiquetas" optional="show" widget="many2many_tags"/>
+                <field name="x_studio_almacen_planner" optional="show" widget="many2many_tags"/>
+                <field name="x_studio_weekday" optional="hide"/>
+                <field name="x_studio_next_recount_date" optional="hide"/>
+                <field name="x_studio_company" optional="hide" widget="many2many_tags"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_planner_search" model="ir.ui.view">
+        <field name="name">x_inventory_planner.search</field>
+        <field name="model">x_inventory_planner</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="x_name"/>
+                <field name="x_studio_almacen_planner"/>
+                <field name="x_studio_etiquetas"/>
+                <separator/>
+                <filter string="Archivado" name="archived" domain="[('x_active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Inventory History: read-only follow-up, grouped by state
+         ============================================================ -->
+    <record id="view_history_tree" model="ir.ui.view">
+        <field name="name">x_inventory_history.tree</field>
+        <field name="model">x_inventory_history</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <tree string="Inventory History" create="false" edit="false" delete="true"
+                  default_group_by="x_studio_state_1">
+                <header>
+                    <button string="Cancelar inventario" name="%(action_cancel_history)d" type="action"/>
+                </header>
+                <field name="x_studio_sequence" widget="handle"/>
+                <field name="x_name" string="Descripción"/>
+                <field name="x_studio_planner_origen" optional="hide"/>
+                <field name="x_studio_request_date" optional="show"/>
+                <field name="x_studio_finish_date_time" optional="show"/>
+                <field name="x_studio_product_tag" optional="show" widget="many2many_tags"/>
+                <field name="x_studio_stock_location" optional="show"/>
+                <field name="x_studio_assigned_user" optional="hide"/>
+                <field name="x_studio_state_1" optional="show"/>
+                <field name="x_studio_company" optional="show"/>
+                <field name="x_studio_total_products" optional="hide"/>
+                <field name="x_studio_missing_products" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_history_form" model="ir.ui.view">
+        <field name="name">x_inventory_history.form</field>
+        <field name="model">x_inventory_history</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <form string="Inventory History" create="false" edit="false">
+                <header>
+                    <button string="Cancelar inventario" name="%(action_cancel_history)d" type="action"
+                            invisible="x_studio_state_1 not in ('pending', 'in_progress')"/>
+                    <field name="x_studio_state_1" widget="statusbar" statusbar_visible="pending,in_progress,done"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" text="Archivado" bg_color="text-bg-danger" invisible="x_active"/>
+                    <field name="x_active" invisible="1"/>
+                    <div class="oe_title">
+                        <h1><field name="x_name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="x_studio_planner_origen"/>
+                            <field name="x_studio_stock_location"/>
+                            <field name="x_studio_assigned_user"/>
+                            <field name="x_studio_product_tag" widget="many2many_tags"/>
+                        </group>
+                        <group>
+                            <field name="x_studio_request_date"/>
+                            <field name="x_studio_finish_date_time"/>
+                            <field name="x_studio_total_products"/>
+                            <field name="x_studio_missing_products"/>
+                            <field name="x_studio_company"/>
+                        </group>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                    <field name="activity_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- The Studio filters compared the state with its labels ("Pendiente"...)
+         and never matched anything; these use the stored keys. -->
+    <record id="view_history_search" model="ir.ui.view">
+        <field name="name">x_inventory_history.search</field>
+        <field name="model">x_inventory_history</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="x_studio_state_1"/>
+                <field name="x_studio_stock_location"/>
+                <field name="x_studio_assigned_user"/>
+                <field name="x_name"/>
+                <separator/>
+                <filter string="Pendiente" name="pending" domain="[('x_studio_state_1', '=', 'pending')]"/>
+                <filter string="En proceso" name="in_progress" domain="[('x_studio_state_1', '=', 'in_progress')]"/>
+                <filter string="Completado" name="done" domain="[('x_studio_state_1', '=', 'done')]"/>
+                <filter string="Cancelado" name="cancelled" domain="[('x_studio_state_1', '=', 'cancelled')]"/>
+                <separator/>
+                <filter string="Archivado" name="archived" domain="[('x_active', '=', False)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Estado" name="group_state" context="{'group_by': 'x_studio_state_1'}"/>
+                    <filter string="Almacén" name="group_location" context="{'group_by': 'x_studio_stock_location'}"/>
+                    <filter string="Fecha de solicitud" name="group_date" context="{'group_by': 'x_studio_request_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Inventory groups
+         ============================================================ -->
+    <record id="view_tags_form" model="ir.ui.view">
+        <field name="name">x_product_tags.form</field>
+        <field name="model">x_product_tags</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <form string="Inventory groups">
+                <sheet>
+                    <widget name="web_ribbon" text="Archivado" bg_color="text-bg-danger" invisible="x_active"/>
+                    <field name="x_active" invisible="1"/>
+                    <div class="oe_title">
+                        <h1><field name="x_name" placeholder="Nombre..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="x_studio_related_products" widget="many2many_tags" required="1"
+                                   options="{'no_create': True}"
+                                   domain="[('available_in_pos', '=', True), ('type', 'in', ('consu', 'product'))]"/>
+                        </group>
+                        <group>
+                            <field name="x_studio_compaa" options="{'no_create': True}"
+                                   domain="[('id', 'in', allowed_company_ids)]"/>
+                        </group>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                    <field name="activity_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_tags_tree" model="ir.ui.view">
+        <field name="name">x_product_tags.tree</field>
+        <field name="model">x_product_tags</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <tree string="Inventory groups">
+                <field name="x_studio_sequence" widget="handle"/>
+                <field name="x_name"/>
+                <field name="x_studio_related_products" optional="show" widget="many2many_tags"/>
+                <field name="x_studio_compaa" optional="show" required="1" options="{'no_create': True}"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_tags_search" model="ir.ui.view">
+        <field name="name">x_product_tags.search</field>
+        <field name="model">x_product_tags</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="x_name"/>
+                <field name="x_studio_related_products"/>
+                <separator/>
+                <filter string="Archivado" name="archived" domain="[('x_active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+
+    <!-- ============================================================
+         Windows and menus (same places as the Studio development)
+         ============================================================ -->
+    <record id="window_planner" model="ir.actions.act_window">
+        <field name="name">Inventory Planner</field>
+        <field name="res_model">x_inventory_planner</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_planner_tree"/>
+        <field name="search_view_id" ref="view_planner_search"/>
+    </record>
+    <record id="window_history" model="ir.actions.act_window">
+        <field name="name">Inventory History</field>
+        <field name="res_model">x_inventory_history</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_history_tree"/>
+        <field name="search_view_id" ref="view_history_search"/>
+    </record>
+    <record id="window_tags" model="ir.actions.act_window">
+        <field name="name">Inventory Groups</field>
+        <field name="res_model">x_product_tags</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_tags_tree"/>
+        <field name="search_view_id" ref="view_tags_search"/>
+    </record>
+
+    <menuitem id="menu_planner" name="Inventory Planner" parent="stock.menu_warehouse_config"
+              action="window_planner" sequence="8"/>
+    <menuitem id="menu_history" name="Inventory History" parent="stock.menu_warehouse_report"
+              action="window_history" sequence="8"/>
+    <menuitem id="menu_tags" name="Inventory Groups" parent="stock.menu_product_in_config_stock"
+              action="window_tags" sequence="8"/>
+</odoo>

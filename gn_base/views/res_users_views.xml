@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- User form: the assigned locations at the end of "Access Rights" -->
+    <record id="view_users_form_gn_locations" model="ir.ui.view">
+        <field name="name">res.users.form.gn.locations</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='access_rights']" position="inside">
+                <group string="GoodNews" name="gn_locations">
+                    <field name="x_studio_assigned_warehouse" options="{'no_create': True}"/>
+                    <field name="x_studio_assigned_central" options="{'no_create': True}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
