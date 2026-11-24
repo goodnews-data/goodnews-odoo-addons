@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         1) Purchase orders of vendors that accept partial deliveries are
+            flagged (x_studio_partial_delivery). The Store App reads the flag
+            in Recepciones to allow receiving in several deliveries.
+         ============================================================ -->
+    <record id="automation_flag_order" model="base.automation">
+        <field name="name">Entregas parciales: marcar el pedido</field>
+        <field name="model_id" ref="purchase.model_purchase_order"/>
+        <field name="trigger">on_create_or_write</field>
+        <field name="trigger_field_ids" eval="[(6, 0, [ref('purchase.field_purchase_order__partner_id'), ref('purchase_stock.field_purchase_order__picking_type_id')])]"/>
+        <field name="filter_domain">[("state", "not in", ["done", "cancel"]), ("partner_id.x_studio_partial_delivery", "=", True), ("x_studio_partial_delivery", "=", False)]</field>
+        <field name="active" eval="True"/>
+    </record>
+    <record id="action_flag_order" model="ir.actions.server">
+        <field name="name">Entregas parciales: marcar el pedido (código)</field>
+        <field name="model_id" ref="purchase.model_purchase_order"/>
+        <field name="base_automation_id" ref="automation_flag_order"/>
+        <field name="usage">base_automation</field>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+# Flag the order as "partial delivery", except for the picking types listed in
+# the system parameter gn_entregas_parciales.tipos_sin_parcial.
+raw = env['ir.config_parameter'].sudo().get_param('gn_entregas_parciales.tipos_sin_parcial') or ''
+excluded = [int(x) for x in raw.replace(' ', '').split(',') if x.isdigit()]
+to_flag = records.filtered_domain([('picking_type_id', 'not in', excluded)]) if excluded else records
+if to_flag:
+    to_flag.write({'x_studio_partial_delivery': True})
+]]></field>
+    </record>
+
+    <!-- ============================================================
+         2) Store App backorders of vendors that do NOT accept partial
+            deliveries are cancelled 10 minutes after they are created.
+            Only transfers whose note says "Store App-Creado parcial" (the
+            Store App writes it when it creates the backorder of a partial
+            receipt). Never done or cancelled ones.
+         ============================================================ -->
+    <record id="automation_cancel_backorder" model="base.automation">
+        <field name="name">Entregas parciales: cancelar pendientes de la Store App</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="trigger">on_time_created</field>
+        <field name="trg_date_id" ref="stock.field_stock_picking__create_date"/>
+        <field name="trg_date_range">10</field>
+        <field name="trg_date_range_type">minutes</field>
+        <field name="filter_domain">[("note", "ilike", "Store App-Creado parcial"), ("partner_id.x_studio_partial_delivery", "!=", True), ("state", "not in", ["done", "cancel"])]</field>
+        <field name="active" eval="True"/>
+    </record>
+    <record id="action_cancel_backorder" model="ir.actions.server">
+        <field name="name">Entregas parciales: cancelar pendiente (código)</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="base_automation_id" ref="automation_cancel_backorder"/>
+        <field name="usage">base_automation</field>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+# Cancel the backorder: action_cancel() cancels moves, lines and reservations
+# (writing the state would leave the moves alive). A note is left first.
+# Transfers with a product of the categories listed in the system parameter
+# gn_entregas_parciales.categorias_sin_cancelar are never cancelled.
+SKIP_STATES = ['done', 'cancel']
+raw = env['ir.config_parameter'].sudo().get_param('gn_entregas_parciales.categorias_sin_cancelar') or ''
+excluded = [int(x) for x in raw.replace(' ', '').split(',') if x.isdigit()]
+
+for picking in records.sudo():
+    if picking.state in SKIP_STATES:
+        continue
+    if excluded and picking.move_ids.filtered_domain([('product_id.categ_id', 'child_of', excluded)]):
+        continue
+    picking.message_post(
+        body='<p>Esta recepción ha sido cancelada porque se hizo una recepción parcial y el proveedor no acepta entregas parciales.</p>',
+        body_is_html=True,
+        subtype_xmlid='mail.mt_note')
+    picking.action_cancel()
+]]></field>
+    </record>
+</odoo>

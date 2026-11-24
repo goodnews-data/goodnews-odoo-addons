@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vendor form (purchase tab, after the vendor location): partial delivery settings -->
+    <record id="view_partner_partial_delivery" model="ir.ui.view">
+        <field name="name">res.partner.form.gn.partial.delivery</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="stock.view_partner_stock_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='property_stock_supplier']" position="after">
+                <field name="x_studio_partial_delivery"/>
+                <field name="x_studio_number_deliveries" invisible="not x_studio_partial_delivery"/>
+                <field name="x_studio_delivery_1" invisible="not x_studio_partial_delivery"/>
+                <field name="x_studio_delivery_2" invisible="not x_studio_partial_delivery"/>
+                <field name="x_studio_delivery_3" invisible="not x_studio_partial_delivery or x_studio_number_deliveries &lt;= 2"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Purchase order form: the flag, next to the vendor reference -->
+    <record id="view_purchase_order_partial_delivery" model="ir.ui.view">
+        <field name="name">purchase.order.form.gn.partial.delivery</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_ref']" position="after">
+                <field name="x_studio_partial_delivery"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

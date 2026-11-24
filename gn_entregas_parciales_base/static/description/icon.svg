@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Entregas parciales">
+  <!-- GoodNews line-art: one box arriving in two parts (first and second delivery), a little sparkle -->
+  <g fill="none" stroke="#5b6a43" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 60 Q30 59.4 46 60 L46 92 Q30 92.6 14 92 Z"/>
+    <path d="M14 60 L20 52 Q34 51.6 52 52 L46 60"/><path d="M46 92 L52 86 L52 52"/>
+    <path d="M26 60 L26 68 L30 66 L34 68 L34 60"/>
+    <path d="M66 44 Q84 43.4 102 44 L102 80 Q84 80.6 66 80 Z" stroke-dasharray="4 5"/>
+    <path d="M66 44 L72 36 Q90 35.6 108 36 L102 44" stroke-dasharray="4 5"/>
+    <path d="M56 74 Q60 72 64 74"/><path d="M60 70 L64 74 L60 78"/>
+    <path d="M30 100 Q32 100 34 100"/><path d="M84 92 Q86 92 88 92"/>
+    <text x="27" y="84" font-family="Georgia,serif" font-size="13" fill="#5b6a43" stroke="none">1</text>
+    <text x="80" y="66" font-family="Georgia,serif" font-size="13" fill="#5b6a43" stroke="none">2</text>
+    <path d="M100 18 L100 26"/><path d="M96 22 L104 22"/>
+  </g>
+</svg>

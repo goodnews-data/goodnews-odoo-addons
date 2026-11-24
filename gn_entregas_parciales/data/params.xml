@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Settings (Ajustes → Técnico → Parámetros del sistema), ids separated by commas.
+         They replace the ids that the Studio automations had hard-coded, which
+         do not exist in another database. noupdate: a module update never
+         overwrites what someone configured.
+           tipos_sin_parcial      picking types whose purchase orders are never
+                                  flagged as partial (GoodNews 2026: the receipt
+                                  types of the Barcelona stores)
+           categorias_sin_cancelar  product categories whose Store App backorders
+                                  are never cancelled (GoodNews 2026: 93 Sweets & Pastries)
+         ============================================================ -->
+    <data noupdate="1">
+        <record id="param_tipos_sin_parcial" model="ir.config_parameter">
+            <field name="key">gn_entregas_parciales.tipos_sin_parcial</field>
+            <field name="value"> </field>
+        </record>
+        <record id="param_categorias_sin_cancelar" model="ir.config_parameter">
+            <field name="key">gn_entregas_parciales.categorias_sin_cancelar</field>
+            <field name="value"> </field>
+        </record>
+    </data>
+</odoo>

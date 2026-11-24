@@ -18,6 +18,8 @@ migraciones sin rehacerlo a mano.
 | [`gn_inventory_planner_base`](gn_inventory_planner_base/) | 17.0 | Modelos y campos del planificador. Solo para una base nueva o migrada. |
 | [`gn_valijas`](gn_valijas/) | 17.0 | Valijas de los centrales de España: «Programar valija» y validación sola de noche, sin pendiente. En producción desde el 23/11/2026. |
 | [`gn_valijas_base`](gn_valijas_base/) | 17.0 | Campos de las valijas. Solo para una base nueva o migrada. |
+| [`gn_entregas_parciales`](gn_entregas_parciales/) | 17.0 | Proveedores con entregas parciales: marca sus pedidos y cancela los pendientes de la Store App de los que no. Probado en test el 24/11/2026. |
+| [`gn_entregas_parciales_base`](gn_entregas_parciales_base/) | 17.0 | Campos de entregas parciales. Solo para una base nueva o migrada. |
 
 ## Convención
 
