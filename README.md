@@ -20,6 +20,7 @@ migraciones sin rehacerlo a mano.
 | [`gn_valijas_base`](gn_valijas_base/) | 17.0 | Campos de las valijas. Solo para una base nueva o migrada. |
 | [`gn_entregas_parciales`](gn_entregas_parciales/) | 17.0 | Proveedores con entregas parciales: marca sus pedidos y cancela los pendientes de la Store App de los que no. En producción desde el 24/11/2026 (sustituye a las automatizaciones de Studio 21 y 22). |
 | [`gn_entregas_parciales_base`](gn_entregas_parciales_base/) | 17.0 | Campos de entregas parciales. Solo para una base nueva o migrada. |
+| [`gn_purchase_account_rules`](gn_purchase_account_rules/) | 17.0 | Reglas contables de compra: cuenta de gasto e IVA por proveedor y producto en pedidos y facturas. En producción desde el 09/11/2026. Sirve igual para una base nueva. |
 
 ## Convención
 

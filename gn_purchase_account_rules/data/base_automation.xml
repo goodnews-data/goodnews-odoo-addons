@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================================================================
+         1) Vendor bill lines (draft): expense account + purchase taxes
+         Only values Odoo set automatically are replaced; a manual choice
+         by the user is always kept.
+         =================================================================== -->
+    <record id="automation_apply_rule_bill_line" model="base.automation">
+        <field name="name">GN: reglas contables de compra (facturas)</field>
+        <field name="model_id" ref="account.model_account_move_line"/>
+        <field name="trigger">on_create_or_write</field>
+        <field name="trigger_field_ids" eval="[(6, 0, [
+            ref('account.field_account_move_line__product_id'),
+            ref('account.field_account_move_line__account_id'),
+            ref('account.field_account_move_line__tax_ids'),
+            ref('account.field_account_move_line__partner_id'),
+        ])]"/>
+        <field name="filter_domain">[('display_type', '=', 'product'), ('parent_state', '=', 'draft'), ('move_id.move_type', 'in', ['in_invoice', 'in_refund', 'in_receipt']), ('move_id.commercial_partner_id.x_gn_purchase_rule_ids', '!=', False)]</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <record id="action_apply_rule_bill_line" model="ir.actions.server">
+        <field name="name">GN: reglas contables de compra (facturas)</field>
+        <field name="model_id" ref="account.model_account_move_line"/>
+        <field name="base_automation_id" ref="automation_apply_rule_bill_line"/>
+        <field name="usage">base_automation</field>
+        <field name="state">code</field>
+        <field name="code"># ---- Constants ---------------------------------------------------------------
+RULE_MODEL = 'x_gn_purchase_account_rule'
+F_PARTNER = 'x_partner_id'
+F_COMPANY = 'x_company_id'
+F_PRODUCTS = 'x_product_tmpl_ids'
+F_ACCOUNT = 'x_account_id'
+F_TAXES = 'x_tax_ids'
+LINE_TYPE_PRODUCT = 'product'
+STATE_DRAFT = 'draft'
+KEY_EXPENSE = 'expense'
+
+rule_model = env[RULE_MODEL]
+
+for line in records:
+    move = line.move_id
+    product = line.product_id
+
+    # Guard clauses: draft product lines of purchase documents only
+    if line.display_type != LINE_TYPE_PRODUCT or move.state != STATE_DRAFT or not product:
+        continue
+    if not move.is_purchase_document(include_receipts=True):
+        continue
+
+    company = move.company_id
+    template = product.product_tmpl_id.with_company(company)
+    rule = rule_model.search([
+        (F_COMPANY, '=', company.id),
+        (F_PARTNER, '=', move.commercial_partner_id.id),
+        (F_PRODUCTS, 'in', template.ids),
+    ], limit=1)
+    if not rule:
+        continue
+
+    fpos = move.fiscal_position_id  # may be empty: map_* then return input unchanged
+    vals = {}
+
+    # Expense account: replace only the value Odoo computed automatically
+    target_account = rule[F_ACCOUNT]
+    if target_account:
+        auto_account = fpos.map_account(template.get_product_accounts().get(KEY_EXPENSE))
+        current_account = line.account_id
+        if current_account != target_account and current_account == auto_account:
+            vals['account_id'] = target_account.id
+
+    # Purchase taxes: replace only the taxes Odoo proposed automatically
+    target_taxes = rule[F_TAXES]
+    if target_taxes:
+        product_taxes = env['account.tax']
+        for tax in template.supplier_taxes_id:
+            if tax.company_id in company.parent_ids:
+                product_taxes = product_taxes | tax
+        auto_taxes = fpos.map_tax(product_taxes)
+        current_ids = set(line.tax_ids.ids)
+        if current_ids != set(target_taxes.ids) and current_ids == set(auto_taxes.ids):
+            vals['tax_ids'] = [(6, 0, target_taxes.ids)]
+
+    if vals:
+        line.write(vals)
+</field>
+    </record>
+
+    <!-- ===================================================================
+         2) Purchase order lines: purchase taxes
+         Keeps the PO total equal to the future bill (3-way match).
+         =================================================================== -->
+    <record id="automation_apply_rule_po_line" model="base.automation">
+        <field name="name">GN: reglas contables de compra (pedidos)</field>
+        <field name="model_id" ref="purchase.model_purchase_order_line"/>
+        <field name="trigger">on_create_or_write</field>
+        <field name="trigger_field_ids" eval="[(6, 0, [
+            ref('purchase.field_purchase_order_line__product_id'),
+            ref('purchase.field_purchase_order_line__taxes_id'),
+            ref('purchase.field_purchase_order_line__partner_id'),
+        ])]"/>
+        <field name="filter_domain">[('display_type', '=', False), ('product_id', '!=', False), ('state', 'in', ['draft', 'sent', 'to approve']), ('partner_id.commercial_partner_id.x_gn_purchase_rule_ids', '!=', False)]</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <record id="action_apply_rule_po_line" model="ir.actions.server">
+        <field name="name">GN: reglas contables de compra (pedidos)</field>
+        <field name="model_id" ref="purchase.model_purchase_order_line"/>
+        <field name="base_automation_id" ref="automation_apply_rule_po_line"/>
+        <field name="usage">base_automation</field>
+        <field name="state">code</field>
+        <field name="code"># ---- Constants ---------------------------------------------------------------
+RULE_MODEL = 'x_gn_purchase_account_rule'
+F_PARTNER = 'x_partner_id'
+F_COMPANY = 'x_company_id'
+F_PRODUCTS = 'x_product_tmpl_ids'
+F_TAXES = 'x_tax_ids'
+EDITABLE_STATES = ['draft', 'sent', 'to approve']
+
+rule_model = env[RULE_MODEL]
+
+for line in records:
+    order = line.order_id
+    product = line.product_id
+
+    # Guard clauses: editable product lines only
+    if line.display_type or not product or order.state not in EDITABLE_STATES:
+        continue
+
+    company = order.company_id
+    template = product.product_tmpl_id.with_company(company)
+    rule = rule_model.search([
+        (F_COMPANY, '=', company.id),
+        (F_PARTNER, '=', order.partner_id.commercial_partner_id.id),
+        (F_PRODUCTS, 'in', template.ids),
+    ], limit=1)
+    if not rule or not rule[F_TAXES]:
+        continue
+
+    # Taxes Odoo proposes for this product (same logic as purchase _compute_tax_id)
+    product_taxes = env['account.tax']
+    for tax in template.supplier_taxes_id:
+        if tax.company_id in company.parent_ids:
+            product_taxes = product_taxes | tax
+    auto_taxes = order.fiscal_position_id.map_tax(product_taxes)
+
+    target_taxes = rule[F_TAXES]
+    current_ids = set(line.taxes_id.ids)
+    if current_ids != set(target_taxes.ids) and current_ids == set(auto_taxes.ids):
+        line.write({'taxes_id': [(6, 0, target_taxes.ids)]})
+</field>
+    </record>
+
+    <!-- ===================================================================
+         3) Validate rules on save
+         =================================================================== -->
+    <record id="automation_validate_rule" model="base.automation">
+        <field name="name">GN: validar reglas contables de compra</field>
+        <field name="model_id" ref="model_x_gn_purchase_account_rule"/>
+        <field name="trigger">on_create_or_write</field>
+        <field name="trigger_field_ids" eval="[(6, 0, [
+            ref('field_x_gn_purchase_account_rule__x_company_id'),
+            ref('field_x_gn_purchase_account_rule__x_partner_id'),
+            ref('field_x_gn_purchase_account_rule__x_product_tmpl_ids'),
+            ref('field_x_gn_purchase_account_rule__x_account_id'),
+            ref('field_x_gn_purchase_account_rule__x_tax_ids'),
+            ref('field_x_gn_purchase_account_rule__x_active'),
+        ])]"/>
+        <field name="active" eval="True"/>
+    </record>
+
+    <record id="action_validate_rule" model="ir.actions.server">
+        <field name="name">GN: validar reglas contables de compra</field>
+        <field name="model_id" ref="model_x_gn_purchase_account_rule"/>
+        <field name="base_automation_id" ref="automation_validate_rule"/>
+        <field name="usage">base_automation</field>
+        <field name="state">code</field>
+        <field name="code"># ---- Constants ---------------------------------------------------------------
+RULE_MODEL = 'x_gn_purchase_account_rule'
+F_ACTIVE = 'x_active'
+F_PARTNER = 'x_partner_id'
+F_COMPANY = 'x_company_id'
+F_PRODUCTS = 'x_product_tmpl_ids'
+F_ACCOUNT = 'x_account_id'
+F_TAXES = 'x_tax_ids'
+TAX_USE_PURCHASE = 'purchase'
+MSG_NO_PRODUCTS = "La regla «%s» debe tener al menos un producto."
+MSG_NOTHING = "La regla «%s» debe indicar una cuenta de gasto, un IVA de compra o ambos."
+MSG_CONTACT = ("Usa el contacto principal «%s» como proveedor, no una dirección o persona de contacto: "
+               "la regla ya cubre todos sus contactos.")
+MSG_ACCOUNT = "La cuenta «%s» no pertenece a la compañía «%s»."
+MSG_TAX = "El impuesto «%s» debe ser de compra y de la compañía «%s»."
+MSG_OVERLAP = "Estos productos ya están en la regla «%s» para el mismo proveedor y compañía: %s."
+
+for rule in records:
+    if not rule[F_ACTIVE]:
+        continue
+
+    company = rule[F_COMPANY]
+    partner = rule[F_PARTNER]
+    products = rule[F_PRODUCTS]
+    account = rule[F_ACCOUNT]
+    taxes = rule[F_TAXES]
+
+    if not products:
+        raise UserError(MSG_NO_PRODUCTS % rule.display_name)
+    if not account and not taxes:
+        raise UserError(MSG_NOTHING % rule.display_name)
+    if partner.parent_id:
+        raise UserError(MSG_CONTACT % partner.commercial_partner_id.display_name)
+    if account and account.company_id not in company.parent_ids:
+        raise UserError(MSG_ACCOUNT % (account.display_name, company.display_name))
+    for tax in taxes:
+        if tax.type_tax_use != TAX_USE_PURCHASE or tax.company_id not in company.parent_ids:
+            raise UserError(MSG_TAX % (tax.display_name, company.display_name))
+
+    # One product = at most one active rule per vendor and company
+    overlap = env[RULE_MODEL].search([
+        (F_COMPANY, '=', company.id),
+        (F_PARTNER, '=', partner.id),
+        (F_PRODUCTS, 'in', products.ids),
+        ('id', '!=', rule.id),
+    ], limit=1)
+    if overlap:
+        shared = products.filtered_domain([('id', 'in', overlap[F_PRODUCTS].ids)])
+        raise UserError(MSG_OVERLAP % (overlap.display_name, ', '.join(shared.mapped('display_name'))))
+</field>
+    </record>
+</odoo>

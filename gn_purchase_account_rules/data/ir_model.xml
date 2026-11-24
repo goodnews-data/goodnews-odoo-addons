@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================================================================
+         Model: x_gn_purchase_account_rule
+         Vendor + company + products  =>  expense account and/or purchase VAT
+         =================================================================== -->
+    <record id="model_x_gn_purchase_account_rule" model="ir.model">
+        <field name="name">Regla contable de compra</field>
+        <field name="model">x_gn_purchase_account_rule</field>
+        <field name="is_mail_thread" eval="True"/>
+        <field name="info">Expense account and purchase taxes per vendor and product.</field>
+    </record>
+
+    <!-- Identification -->
+    <record id="field_x_gn_purchase_account_rule__x_name" model="ir.model.fields">
+        <field name="model_id" ref="model_x_gn_purchase_account_rule"/>
+        <field name="name">x_name</field>
+        <field name="field_description">Descripción</field>
+        <field name="ttype">char</field>
+        <field name="required" eval="True"/>
+        <field name="tracking">1</field>
+    </record>
+
+    <record id="field_x_gn_purchase_account_rule__x_active" model="ir.model.fields">
+        <field name="model_id" ref="model_x_gn_purchase_account_rule"/>
+        <field name="name">x_active</field>
+        <field name="field_description">Activa</field>
+        <field name="ttype">boolean</field>
+        <field name="tracking">2</field>
+    </record>
+
+    <record id="field_x_gn_purchase_account_rule__x_company_id" model="ir.model.fields">
+        <field name="model_id" ref="model_x_gn_purchase_account_rule"/>
+        <field name="name">x_company_id</field>
+        <field name="field_description">Compañía</field>
+        <field name="ttype">many2one</field>
+        <field name="relation">res.company</field>
+        <field name="on_delete">cascade</field>
+        <field name="required" eval="True"/>
+        <field name="tracking">3</field>
+    </record>
+
+    <!-- Scope: vendor and products -->
+    <record id="field_x_gn_purchase_account_rule__x_partner_id" model="ir.model.fields">
+        <field name="model_id" ref="model_x_gn_purchase_account_rule"/>
+        <field name="name">x_partner_id</field>
+        <field name="field_description">Proveedor</field>
+        <field name="ttype">many2one</field>
+        <field name="relation">res.partner</field>
+        <field name="on_delete">cascade</field>
+        <field name="required" eval="True"/>
+        <field name="tracking">4</field>
+    </record>
+
+    <record id="field_x_gn_purchase_account_rule__x_product_tmpl_ids" model="ir.model.fields">
+        <field name="model_id" ref="model_x_gn_purchase_account_rule"/>
+        <field name="name">x_product_tmpl_ids</field>
+        <field name="field_description">Productos</field>
+        <field name="ttype">many2many</field>
+        <field name="relation">product.template</field>
+        <field name="relation_table">x_gn_purch_rule_product_rel</field>
+        <field name="column1">rule_id</field>
+        <field name="column2">product_tmpl_id</field>
+    </record>
+
+    <!-- Result: account and taxes to use -->
+    <record id="field_x_gn_purchase_account_rule__x_account_id" model="ir.model.fields">
+        <field name="model_id" ref="model_x_gn_purchase_account_rule"/>
+        <field name="name">x_account_id</field>
+        <field name="field_description">Cuenta de gasto</field>
+        <field name="ttype">many2one</field>
+        <field name="relation">account.account</field>
+        <field name="on_delete">restrict</field>
+        <field name="tracking">5</field>
+    </record>
+
+    <record id="field_x_gn_purchase_account_rule__x_tax_ids" model="ir.model.fields">
+        <field name="model_id" ref="model_x_gn_purchase_account_rule"/>
+        <field name="name">x_tax_ids</field>
+        <field name="field_description">IVA de compra</field>
+        <field name="ttype">many2many</field>
+        <field name="relation">account.tax</field>
+        <field name="relation_table">x_gn_purch_rule_tax_rel</field>
+        <field name="column1">rule_id</field>
+        <field name="column2">tax_id</field>
+    </record>
+
+    <record id="field_x_gn_purchase_account_rule__x_notes" model="ir.model.fields">
+        <field name="model_id" ref="model_x_gn_purchase_account_rule"/>
+        <field name="name">x_notes</field>
+        <field name="field_description">Notas</field>
+        <field name="ttype">text</field>
+    </record>
+
+    <!-- Inverse on the vendor, shown as a tab on the contact form -->
+    <record id="field_res_partner__x_gn_purchase_rule_ids" model="ir.model.fields">
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="name">x_gn_purchase_rule_ids</field>
+        <field name="field_description">Reglas contables de compra</field>
+        <field name="ttype">one2many</field>
+        <field name="relation">x_gn_purchase_account_rule</field>
+        <field name="relation_field">x_partner_id</field>
+    </record>
+
+    <!-- Defaults -->
+    <record id="default_x_active" model="ir.default">
+        <field name="field_id" ref="field_x_gn_purchase_account_rule__x_active"/>
+        <field name="json_value">true</field>
+    </record>
+</odoo>

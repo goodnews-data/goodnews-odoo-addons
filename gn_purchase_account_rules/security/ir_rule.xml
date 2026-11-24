@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Multi-company isolation: a rule is visible only within its company -->
+    <record id="rule_x_gn_purchase_account_rule_company" model="ir.rule">
+        <field name="name">Regla contable de compra: multi-compañía</field>
+        <field name="model_id" ref="model_x_gn_purchase_account_rule"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[('x_company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

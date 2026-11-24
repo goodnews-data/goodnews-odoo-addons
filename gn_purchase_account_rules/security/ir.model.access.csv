@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_x_gn_purchase_account_rule_user,x_gn_purchase_account_rule user,model_x_gn_purchase_account_rule,base.group_user,1,0,0,0
+access_x_gn_purchase_account_rule_manager,x_gn_purchase_account_rule manager,model_x_gn_purchase_account_rule,account.group_account_manager,1,1,1,1
