@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Models (manual, x_ prefix: installable with "Import module").
+         SAME technical names as the original Studio development: the
+         GN Tools (Store App dashboard, labels, scrap; Alta de Productos)
+         reads them by name. Do not rename.
+           x_product_tags       inventory groups (which products are counted together)
+           x_inventory_planner  cyclic count planner (where, what, how often, who)
+           x_inventory_history  one requested count per location and day, with progress
+
+         Fields are created in batch inside each ir.model (every manual field
+         reloads the registry, ~3 s each): the import stays under the proxy limit.
+         noupdate="1": these batches run only on install. A future version that
+         adds a field must add it as its own ir.model.fields record.
+         MIGRATION MODULE: install it in a database WITHOUT the Studio development
+         (a new or migrated database). Where the Studio models already exist
+         (GoodNews production and test in 2026) the install fails on duplicate
+         models: see README.
+         ============================================================ -->
+    <data noupdate="1">
+
+    <!-- ==== x_product_tags: inventory groups ==== -->
+    <record id="model_x_product_tags" model="ir.model">
+        <field name="name">Inventory groups</field>
+        <field name="model">x_product_tags</field>
+        <field name="state">manual</field>
+        <field name="order">x_studio_sequence asc, id asc</field>
+        <field name="is_mail_thread" eval="True"/>
+        <field name="is_mail_activity" eval="True"/>
+        <field name="field_id" eval="[
+            (0, 0, {'name': 'x_name', 'field_description': 'Description', 'ttype': 'char',
+                    'required': True, 'translate': True, 'tracking': 1, 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_active', 'field_description': 'Activo', 'ttype': 'boolean',
+                    'tracking': 1, 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_sequence', 'field_description': 'Secuencia', 'ttype': 'integer',
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_compaa', 'field_description': 'Compañía', 'ttype': 'many2one',
+                    'relation': 'res.company', 'on_delete': 'set null', 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_related_products', 'field_description': 'Related products',
+                    'ttype': 'many2many', 'relation': 'product.template',
+                    'relation_table': 'x_product_template_x_product_tags_rel',
+                    'column1': 'x_product_tags_id', 'column2': 'product_template_id',
+                    'state': 'manual', 'copied': True}),
+        ]"/>
+    </record>
+
+    <!-- Products side of the same relation (same table, columns swapped) -->
+    <record id="field_product_template_x_studio_inventory_group_tag" model="ir.model.fields">
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="name">x_studio_inventory_group_tag</field>
+        <field name="field_description">Inventory Groups</field>
+        <field name="ttype">many2many</field>
+        <field name="relation">x_product_tags</field>
+        <field name="relation_table">x_product_template_x_product_tags_rel</field>
+        <field name="column1">product_template_id</field>
+        <field name="column2">x_product_tags_id</field>
+        <field name="state">manual</field>
+        <field name="copied" eval="True"/>
+        <field name="help">Grupos de inventario del producto: el planificador pide contar juntos los productos de un mismo grupo.</field>
+    </record>
+
+    <!-- ==== x_inventory_planner ==== -->
+    <record id="model_x_inventory_planner" model="ir.model">
+        <field name="name">Inventory Planner</field>
+        <field name="model">x_inventory_planner</field>
+        <field name="state">manual</field>
+        <field name="order">x_studio_sequence asc, id asc</field>
+        <field name="is_mail_thread" eval="True"/>
+        <field name="is_mail_activity" eval="True"/>
+        <field name="field_id" eval="[
+            (0, 0, {'name': 'x_name', 'field_description': 'Description', 'ttype': 'char',
+                    'required': True, 'translate': True, 'tracking': 1, 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_active', 'field_description': 'Activo', 'ttype': 'boolean',
+                    'tracking': 1, 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_sequence', 'field_description': 'Secuencia', 'ttype': 'integer',
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_frecuencia', 'field_description': 'Frecuency', 'ttype': 'integer',
+                    'state': 'manual', 'copied': True,
+                    'help': 'Días naturales entre un recuento y el siguiente. 0 = recuento único (una sola vez, en la fecha indicada).'}),
+            (0, 0, {'name': 'x_studio_weekday', 'field_description': 'Weekday', 'ttype': 'selection',
+                    'selection': &quot;[('1', 'Monday'), ('2', 'Tuesday'), ('3', 'Wednesday'), ('4', 'Thursday'), ('5', 'Friday'), ('6', 'Saturday'), ('7', 'Sunday')]&quot;,
+                    'state': 'manual', 'copied': True,
+                    'help': 'Si se elige, cada recuento cae siempre en este día de la semana (el siguiente a partir de la frecuencia).'}),
+            (0, 0, {'name': 'x_studio_date_planner', 'field_description': 'Inventory date', 'ttype': 'date',
+                    'state': 'manual', 'copied': True,
+                    'help': 'Fecha del próximo recuento. La acción planificada la pide esa noche y la mueve a la siguiente.'}),
+            (0, 0, {'name': 'x_studio_almacen_planner', 'field_description': 'Warehouse', 'ttype': 'many2many',
+                    'relation': 'stock.location', 'relation_table': 'x_stock_location_x_inventory_planner_rel',
+                    'column1': 'x_inventory_planner_id', 'column2': 'stock_location_id',
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_last_recount_request', 'field_description': 'Última solicitud de inventario',
+                    'ttype': 'date', 'state': 'manual', 'copied': False}),
+            (0, 0, {'name': 'x_studio_last_recount_request_time', 'field_description': 'Last requested inventory',
+                    'ttype': 'datetime', 'state': 'manual', 'copied': False}),
+            (0, 0, {'name': 'x_studio_next_recount_date', 'field_description': 'Fecha siguiente recuento',
+                    'ttype': 'date', 'state': 'manual', 'copied': False}),
+            (0, 0, {'name': 'x_studio_company', 'field_description': 'Company', 'ttype': 'many2many',
+                    'relation': 'res.company', 'relation_table': 'x_res_company_x_inventory_planner_rel',
+                    'column1': 'x_inventory_planner_id', 'column2': 'res_company_id',
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_user_asignado', 'field_description': 'Assigned to', 'ttype': 'many2one',
+                    'relation': 'res.users', 'on_delete': 'set null', 'state': 'manual', 'copied': True,
+                    'help': 'Si se rellena, los recuentos se asignan a esta persona en vez de al usuario con ese almacén asignado.'}),
+            (0, 0, {'name': 'x_studio_etiquetas', 'field_description': 'Tags', 'ttype': 'many2many',
+                    'relation': 'x_product_tags', 'relation_table': 'x_x_inventory_planner_x_product_tags_rel',
+                    'column1': 'x_inventory_planner_id', 'column2': 'x_product_tags_id',
+                    'state': 'manual', 'copied': True}),
+        ]"/>
+    </record>
+
+    <!-- ==== x_inventory_history ==== -->
+    <record id="model_x_inventory_history" model="ir.model">
+        <field name="name">Inventory History</field>
+        <field name="model">x_inventory_history</field>
+        <field name="state">manual</field>
+        <field name="order">x_studio_sequence asc, id asc</field>
+        <field name="is_mail_thread" eval="True"/>
+        <field name="is_mail_activity" eval="True"/>
+        <field name="field_id" eval="[
+            (0, 0, {'name': 'x_name', 'field_description': 'Descripción', 'ttype': 'char',
+                    'required': True, 'translate': True, 'tracking': 1, 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_active', 'field_description': 'Activo', 'ttype': 'boolean',
+                    'tracking': 1, 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_sequence', 'field_description': 'Secuencia', 'ttype': 'integer',
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_planner_origen', 'field_description': 'Origen', 'ttype': 'many2one',
+                    'relation': 'x_inventory_planner', 'on_delete': 'set null', 'index': True,
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_request_date', 'field_description': 'Fecha de solicitud', 'ttype': 'date',
+                    'index': True, 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_stock_location', 'field_description': 'Almacén', 'ttype': 'many2one',
+                    'relation': 'stock.location', 'on_delete': 'set null', 'index': True,
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_assigned_user', 'field_description': 'Assigned user', 'ttype': 'many2one',
+                    'relation': 'res.users', 'on_delete': 'set null', 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_state_1', 'field_description': 'Estado', 'ttype': 'selection',
+                    'selection': &quot;[('pending', 'Pending'), ('in_progress', 'In progress'), ('done', 'Completed'), ('cancelled', 'Cancelled')]&quot;,
+                    'index': True, 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_finish_date_time', 'field_description': 'Fecha finalización',
+                    'ttype': 'datetime', 'state': 'manual', 'copied': False}),
+            (0, 0, {'name': 'x_studio_total_products', 'field_description': 'Products to count',
+                    'ttype': 'integer', 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_missing_products', 'field_description': 'Missing products',
+                    'ttype': 'integer', 'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_product_tag', 'field_description': 'Etiquetas', 'ttype': 'many2many',
+                    'relation': 'x_product_tags', 'relation_table': 'x_x_inventory_history_x_product_tags_rel',
+                    'column1': 'x_inventory_history_id', 'column2': 'x_product_tags_id',
+                    'state': 'manual', 'copied': True}),
+            (0, 0, {'name': 'x_studio_company', 'field_description': 'Compañía', 'ttype': 'many2one',
+                    'relation': 'res.company', 'on_delete': 'set null', 'state': 'manual', 'copied': True}),
+        ]"/>
+    </record>
+
+    </data>
+
+    <!-- Global defaults the Studio models had: new records active, sequence 10 -->
+    <data noupdate="1">
+        <record id="default_planner_active" model="ir.default">
+            <field name="field_id" search="[('model', '=', 'x_inventory_planner'), ('name', '=', 'x_active')]"/>
+            <field name="json_value">true</field>
+        </record>
+        <record id="default_planner_sequence" model="ir.default">
+            <field name="field_id" search="[('model', '=', 'x_inventory_planner'), ('name', '=', 'x_studio_sequence')]"/>
+            <field name="json_value">10</field>
+        </record>
+        <record id="default_history_active" model="ir.default">
+            <field name="field_id" search="[('model', '=', 'x_inventory_history'), ('name', '=', 'x_active')]"/>
+            <field name="json_value">true</field>
+        </record>
+        <record id="default_history_sequence" model="ir.default">
+            <field name="field_id" search="[('model', '=', 'x_inventory_history'), ('name', '=', 'x_studio_sequence')]"/>
+            <field name="json_value">10</field>
+        </record>
+        <record id="default_tags_active" model="ir.default">
+            <field name="field_id" search="[('model', '=', 'x_product_tags'), ('name', '=', 'x_active')]"/>
+            <field name="json_value">true</field>
+        </record>
+        <record id="default_tags_sequence" model="ir.default">
+            <field name="field_id" search="[('model', '=', 'x_product_tags'), ('name', '=', 'x_studio_sequence')]"/>
+            <field name="json_value">10</field>
+        </record>
+    </data>
+</odoo>

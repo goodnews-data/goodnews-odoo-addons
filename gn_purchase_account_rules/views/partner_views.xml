@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tab on the contact form: the vendor's purchase accounting rules -->
+    <record id="view_partner_form_gn_purchase_rules" model="ir.ui.view">
+        <field name="name">res.partner.form.gn.purchase.rules</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page name="gn_purchase_rules" string="Reglas contables de compra"
+                      groups="account.group_account_manager" invisible="parent_id">
+                    <field name="x_gn_purchase_rule_ids" context="{'default_x_partner_id': id}">
+                        <tree>
+                            <field name="x_name"/>
+                            <field name="x_product_tmpl_ids" widget="many2many_tags"/>
+                            <field name="x_account_id"/>
+                            <field name="x_tax_ids" widget="many2many_tags"/>
+                            <field name="x_company_id" groups="base.group_multi_company"/>
+                        </tree>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

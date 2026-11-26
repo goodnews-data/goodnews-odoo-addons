@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Product form, Inventory tab: the inventory groups of the product -->
+    <record id="view_product_template_inventory_group" model="ir.ui.view">
+        <field name="name">product.template.form.gn.inventory.group</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="stock.product_template_form_view_procurement_button"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='responsible_id']" position="after">
+                <field name="x_studio_inventory_group_tag" widget="many2many_tags" options="{'no_create': True}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

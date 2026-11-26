@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Engine: request the counts of the planners.
+           cron (no gn_manual)  every planner whose date is today or overdue;
+                                then moves its date to the next one
+           gn_manual=True       the selected planners, right now (button
+                                "Asignar inventario"); their dates do not move
+         Safe-eval rules (Odoo 17): no imports, no `with`, no lambdas with
+         closures, no dunders.
+         ============================================================ -->
+    <record id="action_request_counts" model="ir.actions.server">
+        <field name="name">Planificador de inventario: pedir recuentos</field>
+        <field name="model_id" search="[('model', '=', 'x_inventory_planner')]"/>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+# =====================================================================
+# Cyclic inventory (gn_inventory_planner): request counts per location.
+# For every location of a planner: assign the counts of the internal quants
+# of its inventory groups to a user (stock.request.count) and create one
+# x_inventory_history to follow the progress.
+# =====================================================================
+LOCAL_TZ = 'Europe/Madrid'          # calendar day that decides what is due
+DAYS_PER_WEEK = 7
+ONE_OFF_FREQUENCY = 0               # frequency 0 = one-off count
+ONE_OFF_GRACE_DAYS = 1              # a one-off still fires the night after, never later
+STATE_PENDING = 'pending'
+ACTIVE_HISTORY_STATES = ['pending', 'in_progress', 'done']
+INTERNAL_USAGE = 'internal'
+
+MANUAL = bool(env.context.get('gn_manual'))
+History = env['x_inventory_history']
+Planner = env['x_inventory_planner']
+StockQuant = env['stock.quant']
+StockRequestCount = env['stock.request.count']
+Users = env['res.users']
+
+now_utc = datetime.datetime.utcnow()                          # datetime fields are naive UTC
+today = datetime.datetime.now(timezone(LOCAL_TZ)).date()      # local calendar day
+
+
+def quants_of(location, tags):
+    # Every internal quant of the inventory groups: no cap (a silent cap made totals wrong)
+    return StockQuant.search([
+        ('location_id', 'child_of', location.id),
+        ('location_id.usage', '=', INTERNAL_USAGE),
+        ('product_id.product_tmpl_id.x_studio_inventory_group_tag', 'in', tags.ids),
+    ])
+
+
+def user_for(planner, location):
+    if planner.x_studio_user_asignado:
+        return planner.x_studio_user_asignado
+    return Users.search([('x_studio_assigned_warehouse', '=', location.id)], limit=1)
+
+
+def already_requested(location):
+    return History.search_count([
+        ('x_studio_stock_location', '=', location.id),
+        ('x_studio_request_date', '=', today),
+        ('x_studio_state_1', 'in', ACTIVE_HISTORY_STATES),
+    ])
+
+
+def request(planner, location, tags, user, quants, count_date):
+    StockRequestCount.create({
+        'quant_ids': [Command.set(quants.ids)],
+        'user_id': user.id,
+        'inventory_date': count_date,
+    }).action_request_count()
+    company = planner.x_studio_company[:1] or location.company_id or env.company
+    History.create({
+        'x_name': 'INV | %s | %s' % (location.display_name, count_date),
+        'x_studio_request_date': today,
+        'x_studio_stock_location': location.id,
+        'x_studio_assigned_user': user.id,
+        'x_studio_state_1': STATE_PENDING,
+        'x_studio_planner_origen': planner.id,
+        'x_studio_product_tag': [Command.set(tags.ids)],
+        'x_studio_total_products': len(quants.product_id),
+        'x_studio_company': company.id,
+    })
+
+
+# =====================================================================
+# Manual: the selected planners, now. Every problem is shown at once and
+# nothing is requested if there is any (no half-done assignments).
+# =====================================================================
+if MANUAL:
+    if not records:
+        raise UserError('Selecciona al menos un planificador.')
+    problems = []
+    todo = []
+    for planner in records:
+        locations = planner.x_studio_almacen_planner
+        tags = planner.x_studio_etiquetas
+        if not locations or not tags:
+            problems.append('%s: falta el almacén o los grupos de inventario.' % planner.display_name)
+            continue
+        count_date = planner.x_studio_date_planner or today
+        if count_date < today:
+            count_date = today
+        for location in locations:
+            if already_requested(location):
+                continue
+            user = user_for(planner, location)
+            if not user:
+                problems.append('%s: nadie tiene asignado el almacén %s (ni hay persona en «Assigned to»).'
+                                % (planner.display_name, location.display_name))
+                continue
+            quants = quants_of(location, tags)
+            if quants:
+                todo.append((planner, location, tags, user, quants, count_date))
+    if problems:
+        raise UserError('No se ha pedido ningún recuento:\n\n' + '\n'.join(problems))
+    for planner, location, tags, user, quants, count_date in todo:
+        request(planner, location, tags, user, quants, count_date)
+    if not todo:
+        log('Inventory planner (manual): nothing to request, already requested today or no stock', level='info')
+
+# =====================================================================
+# Cron: every planner that is due today or overdue (a failed night must
+# not freeze a planner forever), then its next dates.
+# =====================================================================
+else:
+    for planner in Planner.search([('x_studio_date_planner', '<=', today)]):
+        inventory_date = planner.x_studio_date_planner
+        frequency_days = int(planner.x_studio_frecuencia or 0)
+        if frequency_days < ONE_OFF_FREQUENCY:
+            log('Inventory planner %s: invalid frequency %r, skipped' % (planner.display_name, planner.x_studio_frecuencia), level='warning')
+            continue
+
+        # One-off: once per date; an old one is not caught up (old trainings would all fire at once)
+        is_one_off = frequency_days == ONE_OFF_FREQUENCY
+        if is_one_off:
+            last_request = planner.x_studio_last_recount_request
+            if last_request and last_request >= inventory_date:
+                continue
+            if inventory_date < today - datetime.timedelta(days=ONE_OFF_GRACE_DAYS):
+                continue
+
+        locations = planner.x_studio_almacen_planner
+        tags = planner.x_studio_etiquetas
+        if not locations or not tags:
+            log('Inventory planner %s: no locations or tags, skipped' % planner.display_name, level='warning')
+            continue
+
+        for location in locations:
+            if already_requested(location):
+                continue
+            quants = quants_of(location, tags)
+            if not quants:
+                continue
+            user = user_for(planner, location)
+            if not user:
+                log('Inventory planner %s: no user for %s, location skipped' % (planner.display_name, location.display_name), level='warning')
+                continue
+            request(planner, location, tags, user, quants, today)
+
+        if is_one_off:
+            # Keep its date: last_recount_request >= date is what marks it as done
+            planner.write({
+                'x_studio_last_recount_request_time': now_utc,
+                'x_studio_last_recount_request': today,
+                'x_studio_next_recount_date': False,
+            })
+            continue
+
+        next_date = today + datetime.timedelta(days=frequency_days)
+        following_date = next_date + datetime.timedelta(days=frequency_days)
+        if planner.x_studio_weekday:
+            target_weekday = int(planner.x_studio_weekday) - 1        # selection 1-7 -> Python 0-6
+            next_date += datetime.timedelta(days=(target_weekday - next_date.weekday()) % DAYS_PER_WEEK)
+            following_date = next_date + datetime.timedelta(days=frequency_days)
+            following_date += datetime.timedelta(days=(target_weekday - following_date.weekday()) % DAYS_PER_WEEK)
+
+        planner.write({
+            'x_studio_last_recount_request_time': now_utc,
+            'x_studio_last_recount_request': today,
+            'x_studio_date_planner': next_date,
+            'x_studio_next_recount_date': following_date,
+        })
+]]></field>
+    </record>
+
+    <!-- ============================================================
+         Buttons of the planner (form and list)
+         ============================================================ -->
+    <record id="action_assign_now" model="ir.actions.server">
+        <field name="name">Asignar inventario</field>
+        <field name="model_id" search="[('model', '=', 'x_inventory_planner')]"/>
+        <field name="binding_model_id" search="[('model', '=', 'x_inventory_planner')]"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+# Request the counts of the selected planners now (their dates do not move)
+env.ref('gn_inventory_planner.action_request_counts').with_context(
+    gn_manual=True, active_model='x_inventory_planner', active_ids=records.ids).run()
+]]></field>
+    </record>
+
+    <record id="action_cancel_planner" model="ir.actions.server">
+        <field name="name">Cancelar inventario</field>
+        <field name="model_id" search="[('model', '=', 'x_inventory_planner')]"/>
+        <field name="binding_model_id" search="[('model', '=', 'x_inventory_planner')]"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+# =====================================================================
+# Cancel the selected planners: their open counts become "Cancelled", the
+# quants they assigned are released and the planner is ARCHIVED, so it is
+# never executed again. Only the quants assigned to the person of each
+# history are released (other counts in the same store are left alone).
+# To use it again: unarchive it and set the next inventory date.
+# =====================================================================
+OPEN_STATES = ['pending', 'in_progress']
+INTERNAL_USAGE = 'internal'
+History = env['x_inventory_history']
+StockQuant = env['stock.quant']
+
+now_utc = datetime.datetime.utcnow()
+now_local = datetime.datetime.now(timezone(env.user.tz or 'Europe/Madrid'))
+stamp = now_local.strftime('%H:%M %d/%m/%Y')
+
+
+def release(history):
+    location = history.x_studio_stock_location
+    tags = history.x_studio_product_tag
+    if not location or not tags:
+        return
+    domain = [
+        ('location_id', 'child_of', location.id),
+        ('location_id.usage', '=', INTERNAL_USAGE),
+        ('product_id.product_tmpl_id.x_studio_inventory_group_tag', 'in', tags.ids),
+        ('user_id', '!=', False),
+    ]
+    if history.x_studio_assigned_user:
+        domain.append(('user_id', '=', history.x_studio_assigned_user.id))
+    StockQuant.search(domain).write({'user_id': False})
+
+
+for planner in records:
+    histories = History.search([
+        ('x_studio_planner_origen', '=', planner.id),
+        ('x_studio_state_1', 'in', OPEN_STATES),
+    ])
+    for history in histories:
+        release(history)
+    if histories:
+        histories.write({'x_studio_state_1': 'cancelled', 'x_studio_finish_date_time': now_utc})
+    # Chatter note always in English (team convention)
+    planner.message_post(
+        body='Inventory planner cancelled and archived, this scheduler will not be executed again '
+             '(%s open count(s) cancelled), %s %s' % (len(histories), stamp, env.user.name),
+        subtype_xmlid='mail.mt_note')
+    planner.write({'x_active': False})
+]]></field>
+    </record>
+
+    <record id="action_open_groups" model="ir.actions.server">
+        <field name="name">Etiquetas de producto</field>
+        <field name="model_id" search="[('model', '=', 'x_inventory_planner')]"/>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+action = {
+    'type': 'ir.actions.act_window',
+    'name': 'Grupos de inventarios',
+    'res_model': 'x_product_tags',
+    'view_mode': 'tree,form',
+    'target': 'current',
+}
+]]></field>
+    </record>
+
+    <!-- ============================================================
+         Button of the history list: cancel one requested count
+         ============================================================ -->
+    <record id="action_cancel_history" model="ir.actions.server">
+        <field name="name">Cancelar solicitud de inventario</field>
+        <field name="model_id" search="[('model', '=', 'x_inventory_history')]"/>
+        <field name="binding_model_id" search="[('model', '=', 'x_inventory_history')]"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+# Cancel the selected open counts and release the quants assigned to their person
+OPEN_STATES = ['pending', 'in_progress']
+INTERNAL_USAGE = 'internal'
+StockQuant = env['stock.quant']
+now_utc = datetime.datetime.utcnow()
+
+for history in records.filtered_domain([('x_studio_state_1', 'in', OPEN_STATES)]):
+    location = history.x_studio_stock_location
+    tags = history.x_studio_product_tag
+    if location and tags:
+        domain = [
+            ('location_id', 'child_of', location.id),
+            ('location_id.usage', '=', INTERNAL_USAGE),
+            ('product_id.product_tmpl_id.x_studio_inventory_group_tag', 'in', tags.ids),
+            ('user_id', '!=', False),
+        ]
+        if history.x_studio_assigned_user:
+            domain.append(('user_id', '=', history.x_studio_assigned_user.id))
+        StockQuant.search(domain).write({'user_id': False})
+    # Cancel always, even without location or groups
+    history.write({'x_studio_state_1': 'cancelled', 'x_studio_finish_date_time': now_utc})
+]]></field>
+    </record>
+
+    <!-- ============================================================
+         Scheduled actions. noupdate: an update of the module never moves
+         their schedule nor switches them back on.
+         ============================================================ -->
+    <data noupdate="1">
+        <record id="cron_request_counts" model="ir.cron">
+            <field name="name">Ejecutar recuentos programados</field>
+            <field name="model_id" search="[('model', '=', 'x_inventory_planner')]"/>
+            <field name="state">code</field>
+            <field name="code">env.ref('gn_inventory_planner.action_request_counts').run()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="nextcall" eval="(DateTime.now() + timedelta(days=1)).strftime('%Y-%m-%d 00:35:00')"/>
+            <field name="doall" eval="False"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="cron_history_maintenance" model="ir.cron">
+            <field name="name">Actualizar inventory history</field>
+            <field name="model_id" search="[('model', '=', 'x_inventory_history')]"/>
+            <field name="state">code</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">15</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="doall" eval="False"/>
+            <field name="active" eval="True"/>
+            <field name="code"><![CDATA[
+# =====================================================================
+# Inventory History maintenance (every 15 min).
+# 1) Recalculate the progress of open histories.
+# 2) Delete closed histories older than 3 months.
+# =====================================================================
+LOCAL_TZ = 'Europe/Madrid'
+STATE_PENDING = 'pending'
+STATE_IN_PROGRESS = 'in_progress'
+STATE_DONE = 'done'
+OPEN_STATES = [STATE_PENDING, STATE_IN_PROGRESS]
+PRODUCT_TYPE_STORABLE = 'product'
+INTERNAL_USAGE = 'internal'
+
+RETENTION_MONTHS = 3        # closed histories older than this are deleted
+PURGE_BATCH = 500           # max deletions per run: keeps each run short
+PURGE_SAVEPOINT = 'history_purge'
+
+History = env['x_inventory_history'].sudo()
+StockQuant = env['stock.quant'].sudo()
+Product = env['product.product'].sudo()
+
+now_utc = datetime.datetime.utcnow()
+today = datetime.datetime.now(timezone(LOCAL_TZ)).date()
+products_cache = {}
+
+# 1) RECALCULATE OPEN HISTORIES
+for history in History.search([('x_studio_state_1', 'in', OPEN_STATES)]):
+    location = history.x_studio_stock_location
+    tags = history.x_studio_product_tag
+    if not location or not tags:
+        continue
+
+    # Storable products of the inventory groups, scoped to the location's company
+    company_id = location.company_id.id
+    cache_key = (tuple(sorted(tags.ids)), company_id)
+    product_ids = products_cache.get(cache_key)
+    if product_ids is None:
+        product_ids = Product.search([
+            ('product_tmpl_id.x_studio_inventory_group_tag', 'in', tags.ids),
+            ('type', '=', PRODUCT_TYPE_STORABLE),
+            ('company_id', 'in', [False, company_id]),
+        ]).ids
+        products_cache[cache_key] = product_ids
+    if not product_ids:
+        continue
+
+    # Total: stored when the count was requested; fallback to the group size
+    total_products = history.x_studio_total_products or len(product_ids)
+
+    # Pending: distinct products still assigned to a counter
+    assigned_groups = StockQuant.read_group(
+        [
+            ('location_id', 'child_of', location.id),
+            ('location_id.usage', '=', INTERNAL_USAGE),
+            ('product_id', 'in', product_ids),
+            ('user_id', '!=', False),
+        ],
+        ['product_id'],
+        ['product_id'],
+    )
+    pending_products = min(len(assigned_groups), total_products)
+
+    if pending_products == 0:
+        new_state = STATE_DONE
+    elif pending_products == total_products:
+        new_state = STATE_PENDING
+    else:
+        new_state = STATE_IN_PROGRESS
+
+    # Write only what changed (no useless writes, no tracking noise)
+    vals = {}
+    if history.x_studio_total_products != total_products:
+        vals['x_studio_total_products'] = total_products
+    if history.x_studio_missing_products != pending_products:
+        vals['x_studio_missing_products'] = pending_products
+    if history.x_studio_state_1 != new_state:
+        vals['x_studio_state_1'] = new_state
+    if new_state == STATE_DONE and not history.x_studio_finish_date_time:
+        vals['x_studio_finish_date_time'] = now_utc
+    if new_state != STATE_DONE and history.x_studio_finish_date_time:
+        vals['x_studio_finish_date_time'] = False
+    if vals:
+        history.write(vals)
+
+# 2) PURGE CLOSED HISTORIES OLDER THAN RETENTION_MONTHS
+#    Open ones are kept: they still drive step 1 and their quants are assigned.
+cutoff = today - dateutil.relativedelta.relativedelta(months=RETENTION_MONTHS)
+expired = History.with_context(active_test=False).search([
+    ('x_studio_request_date', '<', cutoff),
+    ('x_studio_state_1', 'not in', OPEN_STATES),
+], limit=PURGE_BATCH)
+
+if expired:
+    # Savepoint: a failed purge must not undo the recalculation above
+    env.cr.execute('SAVEPOINT ' + PURGE_SAVEPOINT)
+    try:
+        expired_count = len(expired)
+        expired.unlink()
+        env.flush_all()
+        env.cr.execute('RELEASE SAVEPOINT ' + PURGE_SAVEPOINT)
+        log('Inventory History purge: %s deleted (request date before %s)' % (expired_count, cutoff), level='info')
+    except Exception as error:
+        env.cr.execute('ROLLBACK TO SAVEPOINT ' + PURGE_SAVEPOINT)
+        env.invalidate_all()
+        log('Inventory History purge failed: %s' % error, level='error')
+]]></field>
+        </record>
+    </data>
+</odoo>

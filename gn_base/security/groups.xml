@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Groups shared by several GoodNews developments.
+         In the 2026 GoodNews database they exist without an XML id
+         (ids 149 Supply and 147 Data): this module is for a new or migrated
+         database, see README.
+         noupdate: members and implied groups are managed by hand in Odoo.
+         ============================================================ -->
+    <data noupdate="1">
+        <record id="group_supply" model="res.groups">
+            <field name="name">Supply</field>
+            <field name="category_id" ref="base.module_category_inventory"/>
+        </record>
+
+        <record id="group_data" model="res.groups">
+            <field name="name">Data</field>
+            <field name="category_id" ref="spreadsheet_dashboard.dashboard_management"/>
+        </record>
+    </data>
+</odoo>

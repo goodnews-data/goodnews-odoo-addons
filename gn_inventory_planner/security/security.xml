@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Access rights: the same ones the Studio development had in production.
+           Internal users  planner and history: read/create/edit (no delete)
+                           inventory groups: read only
+           Supply          planner: read/create/edit · history: read · groups: everything
+           Data            inventory groups: everything
+           Settings        everything
+         ============================================================ -->
+    <record id="access_planner_user" model="ir.model.access">
+        <field name="name">Inventory Planner group_user</field>
+        <field name="model_id" search="[('model', '=', 'x_inventory_planner')]"/>
+        <field name="group_id" ref="base.group_user"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="access_planner_supply" model="ir.model.access">
+        <field name="name">Inventory Planner Supply</field>
+        <field name="model_id" search="[('model', '=', 'x_inventory_planner')]"/>
+        <field name="group_id" search="[('name', '=', 'Supply'), ('category_id', '=', ref('base.module_category_inventory'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="access_planner_system" model="ir.model.access">
+        <field name="name">Inventory Planner group_system</field>
+        <field name="model_id" search="[('model', '=', 'x_inventory_planner')]"/>
+        <field name="group_id" ref="base.group_system"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="access_history_user" model="ir.model.access">
+        <field name="name">Inventory History group_user</field>
+        <field name="model_id" search="[('model', '=', 'x_inventory_history')]"/>
+        <field name="group_id" ref="base.group_user"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="access_history_supply" model="ir.model.access">
+        <field name="name">Inventory History Supply</field>
+        <field name="model_id" search="[('model', '=', 'x_inventory_history')]"/>
+        <field name="group_id" search="[('name', '=', 'Supply'), ('category_id', '=', ref('base.module_category_inventory'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="access_history_system" model="ir.model.access">
+        <field name="name">Inventory History group_system</field>
+        <field name="model_id" search="[('model', '=', 'x_inventory_history')]"/>
+        <field name="group_id" ref="base.group_system"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="access_tags_user" model="ir.model.access">
+        <field name="name">Product tags group_user</field>
+        <field name="model_id" search="[('model', '=', 'x_product_tags')]"/>
+        <field name="group_id" ref="base.group_user"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="access_tags_supply" model="ir.model.access">
+        <field name="name">Product tags group_supply</field>
+        <field name="model_id" search="[('model', '=', 'x_product_tags')]"/>
+        <field name="group_id" search="[('name', '=', 'Supply'), ('category_id', '=', ref('base.module_category_inventory'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="access_tags_data" model="ir.model.access">
+        <field name="name">Product tags group_data</field>
+        <field name="model_id" search="[('model', '=', 'x_product_tags')]"/>
+        <field name="group_id" search="[('name', '=', 'Data'), ('category_id', '=', ref('spreadsheet_dashboard.dashboard_management'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- ============================================================
+         Multi-company: each user only sees the records of their companies
+         (or the ones with no company).
+         ============================================================ -->
+    <record id="rule_planner_company" model="ir.rule">
+        <field name="name">Inventory Planner - Company restriction</field>
+        <field name="model_id" search="[('model', '=', 'x_inventory_planner')]"/>
+        <field name="domain_force">['|', ('x_studio_company', '=', False), ('x_studio_company', 'in', company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+    <record id="rule_history_company" model="ir.rule">
+        <field name="name">Inventory History - Company restriction</field>
+        <field name="model_id" search="[('model', '=', 'x_inventory_history')]"/>
+        <field name="domain_force">['|', ('x_studio_company', '=', False), ('x_studio_company', 'in', company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+    <record id="rule_tags_company" model="ir.rule">
+        <field name="name">Product Tags - Company restriction</field>
+        <field name="model_id" search="[('model', '=', 'x_product_tags')]"/>
+        <field name="domain_force">['|', ('x_studio_compaa', '=', False), ('x_studio_compaa', 'in', company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+</odoo>

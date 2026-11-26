@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Planificador de inventario">
+  <!-- GoodNews line-art: clipboard with a count checklist beside a stacked box, small sparkle -->
+  <g fill="none" stroke="#5b6a43" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- clipboard -->
+    <path d="M22 26 Q40 25.4 62 26 Q64 60 62 100 Q42 100.6 22 100 Q20.6 62 22 26 Z"/>
+    <path d="M33 26 L33 20 Q42 19.5 51 20 L51 26"/>
+    <path d="M36 20 Q42 14 48 20"/>
+    <!-- checklist -->
+    <path d="M29 42 L32 45 L37 39"/><path d="M42 42 Q49 41.6 55 42"/>
+    <path d="M29 58 L32 61 L37 55"/><path d="M42 58 Q49 57.6 55 58"/>
+    <path d="M30 72 Q33 71.6 36 72 Q36.4 75 36 78 Q33 78.4 30 78 Q29.6 75 30 72 Z"/><path d="M42 75 Q49 74.6 55 75"/>
+    <path d="M30 86 Q33 85.6 36 86 Q36.4 89 36 92 Q33 92.4 30 92 Q29.6 89 30 86 Z"/><path d="M42 89 Q47 88.6 51 89"/>
+    <!-- box -->
+    <path d="M70 70 Q84 69.4 98 70 L98 100 Q84 100.6 70 100 Z"/>
+    <path d="M70 70 L76 62 Q90 61.6 104 62 L98 70"/>
+    <path d="M98 100 L104 93 L104 62"/>
+    <path d="M80 70 L80 79 L84 77 L88 79 L88 70"/>
+    <!-- calendar loop (cyclic) -->
+    <path d="M78 46 Q84 36 94 40"/><path d="M94 40 L93 34"/><path d="M94 40 L88 41.5"/>
+    <!-- sparkle -->
+    <path d="M100 22 L100 30"/><path d="M96 26 L104 26"/>
+  </g>
+</svg>

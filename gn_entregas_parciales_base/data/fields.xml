@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Partial deliveries: fields with the Studio technical names (the GN
+         Tools Store App reads them in Recepciones). MIGRATION MODULE: only
+         for a database without them (in GoodNews 2026 they already exist).
+         ============================================================ -->
+    <data noupdate="1">
+        <record id="field_res_partner_x_studio_partial_delivery" model="ir.model.fields">
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="name">x_studio_partial_delivery</field>
+            <field name="field_description">Partial delivery</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="help">El proveedor acepta entregas parciales: sus pedidos se marcan y la Store App deja recibir en varias entregas.</field>
+        </record>
+        <record id="field_res_partner_x_studio_number_deliveries" model="ir.model.fields">
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="name">x_studio_number_deliveries</field>
+            <field name="field_description">Number deliveries</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="help">En cuántas entregas suele mandar un pedido (la Store App lo usa para saber cuándo es la última).</field>
+        </record>
+        <record id="field_res_partner_x_studio_delivery_1" model="ir.model.fields">
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="name">x_studio_delivery_1</field>
+            <field name="field_description">Delivery 1</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+        </record>
+        <record id="field_res_partner_x_studio_delivery_2" model="ir.model.fields">
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="name">x_studio_delivery_2</field>
+            <field name="field_description">Delivery 2</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+        </record>
+        <record id="field_res_partner_x_studio_delivery_3" model="ir.model.fields">
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="name">x_studio_delivery_3</field>
+            <field name="field_description">Delivery 3</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+        </record>
+        <record id="field_purchase_order_x_studio_partial_delivery" model="ir.model.fields">
+            <field name="model_id" ref="purchase.model_purchase_order"/>
+            <field name="name">x_studio_partial_delivery</field>
+            <field name="field_description">Partial delivery</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="help">Este pedido se puede recibir en varias entregas (viene del proveedor).</field>
+        </record>
+    </data>
+</odoo>

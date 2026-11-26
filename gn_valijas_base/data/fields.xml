@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         Valijas: fields on transfers (stock.picking), same technical names
+         as the Studio development. MIGRATION MODULE: only for a database
+         without them (in the GoodNews 2026 database they already exist).
+         The old "with partial delivery" field (x_studio_scheduled_backorder)
+         is not carried over: it was never used (Isabella, 23/11/2026).
+         ============================================================ -->
+    <data noupdate="1">
+        <record id="field_stock_picking_x_studio_scheduled" model="ir.model.fields">
+            <field name="model_id" ref="stock.model_stock_picking"/>
+            <field name="name">x_studio_scheduled</field>
+            <field name="field_description">Sin entrega parcial</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="copied" eval="False"/>
+            <field name="help">La valija está programada: el cron nocturno la valida con lo que esté preparado, sin crear pendiente.</field>
+        </record>
+        <record id="field_stock_picking_x_studio_locked" model="ir.model.fields">
+            <field name="model_id" ref="stock.model_stock_picking"/>
+            <field name="name">x_studio_locked</field>
+            <field name="field_description">Bloqueado</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="copied" eval="False"/>
+        </record>
+        <record id="field_stock_picking_x_studio_validation_date" model="ir.model.fields">
+            <field name="model_id" ref="stock.model_stock_picking"/>
+            <field name="name">x_studio_validation_date</field>
+            <field name="field_description">Fecha autovalidación</field>
+            <field name="ttype">datetime</field>
+            <field name="state">manual</field>
+            <field name="copied" eval="False"/>
+            <field name="help">Desde cuándo la puede validar el cron nocturno.</field>
+        </record>
+    </data>
+</odoo>
