@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Se instala APAGADA. En prod: activa, cada 1 days -->
+        <record id="cron_169" model="ir.cron">
+            <field name="name">Crear ordenes de desecho</field>
+            <field name="model_id" ref="gn_control_desecho_base.model_x_control_de_desecho"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[today = datetime.date.today()
+records = env['x_control_de_desecho'].search([
+    ('x_studio_active', '=', True),
+    ('x_studio_next_date', '>=', datetime.datetime.combine(today, datetime.time.min)),
+    ('x_studio_next_date', '<=', datetime.datetime.combine(today, datetime.time.max)),
+])
+for record in records:
+    product = record.x_studio_product_product
+    locations = record.x_studio_warehouse
+    if not product:
+        continue
+    if not locations:
+        continue
+    # Cachear como string ANTES del bucle: si un scrap falla y la caché
+    # del producto se invalida, el message_post al final seguirá funcionando.
+    product_name = product.display_name
+    errors = []  # acumular errores para postear UN solo mensaje al final
+    # 🔹 Agrupar stock por ubicación en UNA sola query
+    quant_data = env['stock.quant'].read_group(
+        [
+            ('product_id', '=', product.id),
+            ('location_id', 'in', locations.ids),
+            ('quantity', '>', 0)
+        ],
+        ['quantity:sum'],
+        ['location_id']
+    )
+    for quant in quant_data:
+        location_id = quant['location_id'][0]
+        total_qty = quant['quantity']
+        if total_qty <= 0:
+            continue
+        # SAVEPOINT manual con SQL (en safe_eval `with` está prohibido).
+        # Nombre único por record + location para evitar colisiones.
+        sp_name = "sp_scrap_%s_%s" % (record.id, location_id)
+        env.cr.execute("SAVEPOINT " + sp_name)
+        try:
+            scrap = env['stock.scrap'].create({
+                'product_id': product.id,
+                'scrap_qty': total_qty,
+                'location_id': location_id,
+                'company_id': record.x_studio_company.id,
+                'origin': record.display_name,
+            })
+            scrap.action_validate()
+            # Éxito: liberamos el savepoint
+            env.cr.execute("RELEASE SAVEPOINT " + sp_name)
+        except Exception as e:
+            # Fallo: rollback al savepoint deja la transacción exterior sana
+            env.cr.execute("ROLLBACK TO SAVEPOINT " + sp_name)
+            errors.append((location_id, str(e)))
+    # 🔹 Actualizar fechas en un solo write
+    now = datetime.datetime.utcnow()
+    vals = {
+        'x_studio_last_date': now
+    }
+    if record.x_studio_frequency:
+        frequency = int(record.x_studio_frequency)
+        next_date = now + datetime.timedelta(days=frequency)
+        if record.x_studio_weekday:
+            target_weekday = int(record.x_studio_weekday) - 1
+            days_to_add = (target_weekday - next_date.weekday()) % 7
+            next_date = next_date + datetime.timedelta(days=days_to_add)
+        vals['x_studio_next_date'] = next_date
+    record.write(vals)
+    # UN solo mensaje al chatter, solo si hubo errores
+    if errors:
+        lines = "".join(
+            f"<li>Ubicación #{loc_id}: {msg}</li>"
+            for loc_id, msg in errors
+        )
+        record.message_post(
+            body=f"🚨 ERROR procesando desecho automático {product_name}:<ul>{lines}</ul>"
+        )]]></field>
+            <field name="interval_number" eval="1"/>
+            <field name="interval_type">days</field>
+            <field name="numbercall" eval="-1"/>
+            <field name="doall" eval="False"/>
+            <field name="priority" eval="7"/>
+            <field name="active" eval="False"/>
+        </record>
+
+        <!-- Se instala APAGADA. En prod: activa, cada 1 days -->
+        <record id="cron_170" model="ir.cron">
+            <field name="name">Crear compensación por negativos</field>
+            <field name="model_id" ref="gn_control_desecho_base.model_x_control_de_desecho"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[today = datetime.date.today()
+records = env['x_control_de_desecho'].search([
+    ('x_studio_active', '=', True),
+])
+for record in records:
+    product = record.x_studio_product_product
+    locations = record.x_studio_warehouse
+    if not product or not locations:
+        continue
+    errors = []  # acumular errores para postear UN solo mensaje al final
+    quant_data = env['stock.quant'].read_group(
+        [
+            ('product_id', '=', product.id),
+            ('location_id', 'in', locations.ids),
+            ('quantity', '<', 0)
+        ],
+        ['quantity:sum'],
+        ['location_id']
+    )
+    for quant in quant_data:
+        location_id = quant['location_id'][0]
+        total_qty = quant['quantity']
+        if total_qty >= 0:
+            continue
+        abs_qty = abs(total_qty)
+        if abs_qty <= 0.20:
+            qty_to_produce = abs_qty
+        else:
+            int_part = int(abs_qty)
+            qty_to_produce = int_part if abs_qty == int_part else int_part + 1
+        # Buscar picking type por ubicación de origen
+        picking_type = env['stock.picking.type'].search([
+            ('code', '=', 'mrp_operation'),
+            ('default_location_src_id', '=', location_id),
+        ], limit=1)
+        # Si no encuentra por src, buscar por dest
+        if not picking_type:
+            picking_type = env['stock.picking.type'].search([
+                ('code', '=', 'mrp_operation'),
+                ('default_location_dest_id', '=', location_id),
+            ], limit=1)
+        mo_vals = {
+            'product_id': product.id,
+            'product_qty': qty_to_produce,
+            'product_uom_id': product.uom_id.id,
+            'location_src_id': location_id,
+            'location_dest_id': location_id,
+            'company_id': record.x_studio_company.id,
+            'origin': f"AUTO FIX NEGATIVE {record.display_name}",
+        }
+        if picking_type:
+            mo_vals['picking_type_id'] = picking_type.id
+        try:
+            mo = env['mrp.production'].create(mo_vals)
+            # (sin message_post de éxito — antes era el que llenaba el chatter)
+        except Exception as e:
+            errors.append((location_id, str(e)))
+    # UN solo mensaje al chatter, solo si hubo errores
+    if errors:
+        lines = "".join(
+            f"<li>Ubicación #{loc_id}: {msg}</li>"
+            for loc_id, msg in errors
+        )
+        record.message_post(
+            body=f"🚨 ERROR creando MO {product.display_name}:<ul>{lines}</ul>"
+        )]]></field>
+            <field name="interval_number" eval="1"/>
+            <field name="interval_type">days</field>
+            <field name="numbercall" eval="-1"/>
+            <field name="doall" eval="False"/>
+            <field name="priority" eval="6"/>
+            <field name="active" eval="False"/>
+        </record>
+    </data>
+</odoo>

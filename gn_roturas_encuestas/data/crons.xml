@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Se instala APAGADA. En prod: activa, cada 2 days -->
+        <record id="cron_177" model="ir.cron">
+            <field name="name">Generar compras amazon encuestas HQ</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ============================================================
+# Constants (single source of truth)
+# ============================================================
+SERVER_ACTION_ID = 1732
+TARGET_SURVEY_ID = 24    # survey.survey: "Compras Amazon"
+BATCH_LIMIT      = 100   # max records processed per tick (safety cap)
+
+# ============================================================
+# Find surveys ready to be turned into Purchase Orders:
+#   - belong to the target survey (Compras Amazon, id=24)
+#   - user finished filling the survey
+#   - no Purchase Order linked yet
+#   - survey state is not 'completed'
+# ============================================================
+pending = env['survey.user_input'].search(
+    [
+        ('survey_id',                 '=',  TARGET_SURVEY_ID),
+        ('state',                     '=',  'done'),
+        ('x_studio_purchase_order',   '=',  False),
+        ('x_studio_solution_state_1', '!=', 'completed'),
+    ],
+    limit=BATCH_LIMIT,
+)
+
+# Nothing to do this tick — skip silently
+if pending:
+    env['ir.actions.server'].browse(SERVER_ACTION_ID).with_context(
+        active_model='survey.user_input',
+        active_ids=pending.ids,
+        active_id=pending[:1].id,
+    ).run()]]></field>
+            <field name="interval_number" eval="2"/>
+            <field name="interval_type">days</field>
+            <field name="numbercall" eval="-1"/>
+            <field name="doall" eval="False"/>
+            <field name="priority" eval="2000"/>
+            <field name="active" eval="False"/>
+        </record>
+    </data>
+</odoo>

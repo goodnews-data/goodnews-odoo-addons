@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="view_6437" model="ir.ui.view">
+            <field name="name">Default list view for x_app_tour</field>
+            <field name="model">x_app_tour</field>
+            <field name="type">tree</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><tree>
+  <field name="x_studio_sequence" widget="handle"/>
+  <field name="x_name"/>
+</tree></field>
+        </record>
+
+        <record id="view_6438" model="ir.ui.view">
+            <field name="name">Default form view for x_app_tour</field>
+            <field name="model">x_app_tour</field>
+            <field name="type">form</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><form>
+  <header/>
+  <sheet string="App Tour">
+    <widget name="web_ribbon" text="Archivado" bg_color="text-bg-danger" invisible="x_active"/>
+    <field name="x_active" invisible="1"/>
+    <div class="oe_title">
+                <h1>
+                    <field name="x_name" required="1" placeholder="Name..."/>
+                </h1>
+            </div>
+    <group name="studio_group_0e6a7b">
+      <group name="studio_group_0e6a7b_left"/>
+      <group name="studio_group_0e6a7b_right"/>
+    </group>
+  </sheet>
+  <div class="oe_chatter" name="oe_chatter">
+    <field name="message_follower_ids"/>
+    <field name="message_ids"/>
+    <field name="activity_ids"/>
+  </div>
+</form></field>
+        </record>
+
+        <record id="view_6439" model="ir.ui.view">
+            <field name="name">Default search view for x_app_tour</field>
+            <field name="model">x_app_tour</field>
+            <field name="type">search</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><search>
+  <field name="x_name"/>
+  <separator/>
+  <filter string="Archivado" name="archived_x_app_tour" domain="[['x_active', '=', False]]"/>
+  <separator/>
+</search></field>
+        </record>
+
+        <record id="view_6440" model="ir.ui.view">
+            <field name="name">Odoo Studio: Default form view for x_app_tour customization</field>
+            <field name="model">x_app_tour</field>
+            <field name="inherit_id" ref="view_6438"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//group[@name='studio_group_0e6a7b_left']" position="inside">
+    <field name="x_studio_title"/>
+    <field name="x_studio_description"/>
+    <field name="x_studio_active"/>
+    <field name="x_studio_sequence_1"/>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_0e6a7b']" position="after">
+    <field name="x_studio_step_ids" string="step ids"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6441" model="ir.ui.view">
+            <field name="name">Default list view for x_tour_step</field>
+            <field name="model">x_tour_step</field>
+            <field name="type">tree</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><tree>
+  <field name="x_studio_sequence" widget="handle"/>
+  <field name="x_name"/>
+</tree></field>
+        </record>
+
+        <record id="view_6442" model="ir.ui.view">
+            <field name="name">Default form view for x_tour_step</field>
+            <field name="model">x_tour_step</field>
+            <field name="type">form</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><form>
+  <header/>
+  <sheet string="Tour step">
+    <widget name="web_ribbon" text="Archivado" bg_color="text-bg-danger" invisible="x_active"/>
+    <field name="x_active" invisible="1"/>
+    <div class="oe_title">
+                <h1>
+                    <field name="x_name" required="1" placeholder="Name..."/>
+                </h1>
+            </div>
+    <group name="studio_group_e97641">
+      <group name="studio_group_e97641_left"/>
+      <group name="studio_group_e97641_right"/>
+    </group>
+  </sheet>
+  <div class="oe_chatter" name="oe_chatter">
+    <field name="message_follower_ids"/>
+    <field name="message_ids"/>
+    <field name="activity_ids"/>
+  </div>
+</form></field>
+        </record>
+
+        <record id="view_6443" model="ir.ui.view">
+            <field name="name">Default search view for x_tour_step</field>
+            <field name="model">x_tour_step</field>
+            <field name="type">search</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><search>
+  <field name="x_name"/>
+  <separator/>
+  <filter string="Archivado" name="archived_x_tour_step" domain="[['x_active', '=', False]]"/>
+  <separator/>
+</search></field>
+        </record>
+
+        <record id="view_6444" model="ir.ui.view">
+            <field name="name">Odoo Studio: Default form view for x_tour_step customization</field>
+            <field name="model">x_tour_step</field>
+            <field name="inherit_id" ref="view_6442"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//group[@name='studio_group_e97641_left']" position="inside">
+    <field name="x_studio_tour_id" options="{'create_name_field': 'x_name'}"/>
+    <field name="x_studio_description"/>
+    <field name="x_studio_sequence_tourstep"/>
+    <field name="x_studio_page_url"/>
+    <field name="x_studio_anchor"/>
+    <field name="x_studio_frame"/>
+    <field name="x_studio_step_title"/>
+    <field name="x_studio_step_body"/>
+    <field name="x_studio_placement"/>
+    <field name="x_studio_advance"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6445" model="ir.ui.view">
+            <field name="name">Default kanban view for ir.model(3281,)</field>
+            <field name="model">x_app_tour</field>
+            <field name="type">kanban</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><kanban string="App Tour"><templates><t t-name="kanban-box"><div t-attf-class="oe_kanban_card oe_kanban_global_click"><div class="o_kanban_card_content"><field name="x_name"/></div></div></t></templates></kanban></field>
+        </record>
+
+        <record id="view_6446" model="ir.ui.view">
+            <field name="name">Odoo Studio: Default kanban view for ir.model(3281,) customization</field>
+            <field name="model">x_app_tour</field>
+            <field name="inherit_id" ref="view_6445"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='x_name']" position="after">
+    <field name="x_studio_title" display="full"/>
+    <field name="x_studio_description" display="full"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6447" model="ir.ui.view">
+            <field name="name">Odoo Studio: Default search view for x_tour_step customization</field>
+            <field name="model">x_tour_step</field>
+            <field name="inherit_id" ref="view_6443"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='x_name']" position="before">
+    <field name="x_studio_tour_id"/>
+  </xpath>
+</data></field>
+        </record>
+</odoo>

@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="model_x_commercial_time" model="ir.model">
+            <field name="name">Commercial time</field>
+            <field name="model">x_commercial_time</field>
+            <field name="state">manual</field>
+            <field name="is_mail_thread" eval="True"/>
+            <field name="is_mail_activity" eval="True"/>
+        </record>
+
+        <record id="field_x_commercial_time__x_active" model="ir.model.fields">
+            <field name="name">x_active</field>
+            <field name="model_id" ref="model_x_commercial_time"/>
+            <field name="field_description">Activo</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="tracking" eval="1"/>
+        </record>
+
+        <record id="field_x_commercial_time__x_name" model="ir.model.fields">
+            <field name="name">x_name</field>
+            <field name="model_id" ref="model_x_commercial_time"/>
+            <field name="field_description">Descripción</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="True"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="True"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="tracking" eval="1"/>
+        </record>
+
+        <record id="field_x_commercial_time__x_studio_closing" model="ir.model.fields">
+            <field name="name">x_studio_closing</field>
+            <field name="model_id" ref="model_x_commercial_time"/>
+            <field name="field_description">Closing time</field>
+            <field name="ttype">datetime</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_commercial_time__x_studio_day_type" model="ir.model.fields">
+            <field name="name">x_studio_day_type</field>
+            <field name="model_id" ref="model_x_commercial_time"/>
+            <field name="field_description">Schedule type</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': 'Regular', 'name': 'Regular', 'sequence': 0}), Command.create({'value': 'Holiday', 'name': 'Holiday', 'sequence': 1})]"/>
+        </record>
+
+        <record id="field_x_commercial_time__x_studio_opening" model="ir.model.fields">
+            <field name="name">x_studio_opening</field>
+            <field name="model_id" ref="model_x_commercial_time"/>
+            <field name="field_description">Opening time</field>
+            <field name="ttype">datetime</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_commercial_time__x_studio_sequence" model="ir.model.fields">
+            <field name="name">x_studio_sequence</field>
+            <field name="model_id" ref="model_x_commercial_time"/>
+            <field name="field_description">Secuencia</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_commercial_time__x_studio_shift_type" model="ir.model.fields">
+            <field name="name">x_studio_shift_type</field>
+            <field name="model_id" ref="model_x_commercial_time"/>
+            <field name="field_description">Shift Type</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': 'morning', 'name': 'Morning', 'sequence': 0}), Command.create({'value': 'afternoon', 'name': 'Afternoon', 'sequence': 1}), Command.create({'value': 'other', 'name': 'Other', 'sequence': 2})]"/>
+        </record>
+
+        <record id="field_x_commercial_time__x_studio_tolerance_min" model="ir.model.fields">
+            <field name="name">x_studio_tolerance_min</field>
+            <field name="model_id" ref="model_x_commercial_time"/>
+            <field name="field_description">Minutes of tolerance for opening POS session</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_commercial_time__x_studio_city" model="ir.model.fields">
+            <field name="name">x_studio_city</field>
+            <field name="model_id" ref="model_x_commercial_time"/>
+            <field name="field_description">City</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">res.country.state.city</field>
+            <field name="relation_table">x_res_country_state_city_x_commercial_time_rel_1</field>
+            <field name="column1">x_commercial_time_id</field>
+            <field name="column2">res_country_state_city_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_commercial_time__x_studio_pdv" model="ir.model.fields">
+            <field name="name">x_studio_pdv</field>
+            <field name="model_id" ref="model_x_commercial_time"/>
+            <field name="field_description">Store</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">pos.config</field>
+            <field name="relation_table">x_pos_config_x_commercial_time_rel</field>
+            <field name="column1">x_commercial_time_id</field>
+            <field name="column2">pos_config_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <!-- Orden de la lista (después de crear sus campos) -->
+        <record id="model_x_commercial_time" model="ir.model">
+            <field name="order">x_studio_sequence asc, id asc</field>
+        </record>
+</odoo>

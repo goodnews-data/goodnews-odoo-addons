@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="menu_1048" model="ir.ui.menu">
+            <field name="name">Link controller</field>
+            <field name="parent_id" ref="purchase.menu_purchase_config"/>
+            <field name="sequence" eval="3"/>
+            <field name="active" eval="True"/>
+            <field name="groups_id" eval="[Command.set([ref('gn_studio_grupos.group_148')])]"/>
+            <field name="action" ref="action_window_1751"/>
+        </record>
+</odoo>

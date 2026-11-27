@@ -1,0 +1,566 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="field_account_move__x_studio_banco_previsin_de_pago" model="ir.model.fields">
+            <field name="name">x_studio_banco_previsin_de_pago</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="field_description">Banco Prevision de Pago</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': 'CAIXABANK', 'name': 'CAIXABANK', 'sequence': 0})]"/>
+        </record>
+
+        <record id="field_event_event__x_studio_additional_event_information" model="ir.model.fields">
+            <field name="name">x_studio_additional_event_information</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">X Studio Additional Event Information</field>
+            <field name="ttype">text</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_attachment_1" model="ir.model.fields">
+            <field name="name">x_studio_attachment_1</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Attachment 1</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_attachment_1_filename" model="ir.model.fields">
+            <field name="name">x_studio_attachment_1_filename</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Filename for x_studio_binary_field_8e5_1j1ig6n1t</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_attatchment_2" model="ir.model.fields">
+            <field name="name">x_studio_attatchment_2</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Attatchment 2</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_attatchment_2_filename" model="ir.model.fields">
+            <field name="name">x_studio_attatchment_2_filename</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Filename for x_studio_binary_field_29k_1j1ig7jfo</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_attatchment_3" model="ir.model.fields">
+            <field name="name">x_studio_attatchment_3</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Attatchment 3</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_attatchment_3_filename" model="ir.model.fields">
+            <field name="name">x_studio_attatchment_3_filename</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Filename for x_studio_binary_field_42h_1j1ig88dh</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_attendees" model="ir.model.fields">
+            <field name="name">x_studio_attendees</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Attendees</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_brand_involved" model="ir.model.fields">
+            <field name="name">x_studio_brand_involved</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Brand Involved</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_event_state" model="ir.model.fields">
+            <field name="name">x_studio_event_state</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Event State</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': 'New', 'name': 'New', 'sequence': 0}), Command.create({'value': 'Work in progress', 'name': 'Work in progress', 'sequence': 1}), Command.create({'value': 'Done', 'name': 'Done', 'sequence': 2})]"/>
+        </record>
+
+        <record id="field_event_event__x_studio_notice_start_date" model="ir.model.fields">
+            <field name="name">x_studio_notice_start_date</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Notice start Date</field>
+            <field name="ttype">date</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_selection_field_8id_1j1if5cco" model="ir.model.fields">
+            <field name="name">x_studio_selection_field_8id_1j1if5cco</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Barra de estado de flujo</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': 'new', 'name': 'New', 'sequence': 0}), Command.create({'value': 'wip', 'name': 'Work in Progress', 'sequence': 1}), Command.create({'value': 'done', 'name': 'Completed', 'sequence': 2})]"/>
+        </record>
+
+        <record id="field_event_event__x_studio_type_collab" model="ir.model.fields">
+            <field name="name">x_studio_type_collab</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Type of Collab</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': 'Catering', 'name': 'Catering', 'sequence': 0}), Command.create({'value': 'Street Marketing', 'name': 'Street Marketing', 'sequence': 1}), Command.create({'value': 'Take Over', 'name': 'Take Over', 'sequence': 2}), Command.create({'value': 'Other', 'name': 'Other', 'sequence': 3})]"/>
+        </record>
+
+        <record id="field_event_event__x_studio_type_of_event" model="ir.model.fields">
+            <field name="name">x_studio_type_of_event</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Type of Event</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': 'Collaboration', 'name': 'Collaboration', 'sequence': 0}), Command.create({'value': 'Operational Change', 'name': 'Operational Change', 'sequence': 1}), Command.create({'value': 'Product Launch', 'name': 'Product Launch', 'sequence': 2})]"/>
+        </record>
+
+        <record id="field_hr_attendance__x_studio_reasons_of_stay" model="ir.model.fields">
+            <field name="name">x_studio_reasons_of_stay</field>
+            <field name="model_id" ref="hr_attendance.model_hr_attendance"/>
+            <field name="field_description">Reasons of stay</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_hr_attendance__x_studio_selection_field_5d1_1ir7hsp6o" model="ir.model.fields">
+            <field name="name">x_studio_selection_field_5d1_1ir7hsp6o</field>
+            <field name="model_id" ref="hr_attendance.model_hr_attendance"/>
+            <field name="field_description">Working Location</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': 'Spain', 'name': 'Spain', 'sequence': 0}), Command.create({'value': 'France', 'name': 'France', 'sequence': 1}), Command.create({'value': 'Netherlands', 'name': 'Netherlands', 'sequence': 2})]"/>
+        </record>
+
+        <record id="field_product_template__x_studio_kcal" model="ir.model.fields">
+            <field name="name">x_studio_kcal</field>
+            <field name="model_id" ref="product.model_product_template"/>
+            <field name="field_description">KCAL (whole product)</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="help">Energy in kcal of the WHOLE product or container, NOT per 100 g / 100 ml. Example: a 2 L bottle of whole milk = 1280; a 0.7 L syrup bottle = 2170. The Store App multiplies this by the recipe quantity in pos.combo.component.config. EMPTY OR 0 means not informed: the drink is then shown as approximate instead of showing a wrong figure.</field>
+        </record>
+
+        <record id="field_product_template__x_studio_vida_util_abierto" model="ir.model.fields">
+            <field name="name">x_studio_vida_util_abierto</field>
+            <field name="model_id" ref="product.model_product_template"/>
+            <field name="field_description">Open shelf life (days)</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="help">Shelf life of the product in days once the package is opened. Empty or 0 = not set.</field>
+        </record>
+
+        <record id="field_res_partner__x_studio_portal_duplicate_control" model="ir.model.fields">
+            <field name="name">x_studio_portal_duplicate_control</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="field_description">Portal Duplicate Control</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="True"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_user_input__x_studio_estate_of_request" model="ir.model.fields">
+            <field name="name">x_studio_estate_of_request</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="field_description">Estate of request</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': 'New', 'name': 'New', 'sequence': 0}), Command.create({'value': 'Working', 'name': 'Working', 'sequence': 1}), Command.create({'value': 'Done', 'name': 'Done', 'sequence': 2})]"/>
+        </record>
+
+        <record id="field_survey_user_input__x_studio_solution_state_1" model="ir.model.fields">
+            <field name="name">x_studio_solution_state_1</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="field_description">Solution state</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': 'New', 'name': 'New', 'sequence': 0}), Command.create({'value': 'work in progress', 'name': 'Work in progress', 'sequence': 1}), Command.create({'value': 'completed', 'name': 'Completed', 'sequence': 2})]"/>
+        </record>
+
+        <record id="field_survey_user_input_line__x_studio_solved" model="ir.model.fields">
+            <field name="name">x_studio_solved</field>
+            <field name="model_id" ref="survey.model_survey_user_input_line"/>
+            <field name="field_description">Solved</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_account_analytic_line__x_plan158_id" model="ir.model.fields">
+            <field name="name">x_plan158_id</field>
+            <field name="model_id" ref="account.model_account_analytic_line"/>
+            <field name="field_description">CASHFLOW NEW</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">account.analytic.account</field>
+            <field name="on_delete">restrict</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="True"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_account_analytic_line__x_plan285_id" model="ir.model.fields">
+            <field name="name">x_plan285_id</field>
+            <field name="model_id" ref="account.model_account_analytic_line"/>
+            <field name="field_description">TEAMS</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">account.analytic.account</field>
+            <field name="on_delete">restrict</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="True"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_account_analytic_line__x_plan306_id" model="ir.model.fields">
+            <field name="name">x_plan306_id</field>
+            <field name="model_id" ref="account.model_account_analytic_line"/>
+            <field name="field_description">TRAVEL RETAIL</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">account.analytic.account</field>
+            <field name="on_delete">restrict</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="True"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_discount" model="ir.model.fields">
+            <field name="name">x_studio_discount</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Discount</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">pos.custom.discount</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_pdv_involved" model="ir.model.fields">
+            <field name="name">x_studio_pdv_involved</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Stores Involved</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">pos.config</field>
+            <field name="relation_table">x_event_event_pos_config_rel</field>
+            <field name="column1">event_event_id</field>
+            <field name="column2">pos_config_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_products" model="ir.model.fields">
+            <field name="name">x_studio_products</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Products Involved</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">product.template</field>
+            <field name="relation_table">x_event_event_product_template_rel</field>
+            <field name="column1">event_event_id</field>
+            <field name="column2">product_template_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_responsible" model="ir.model.fields">
+            <field name="name">x_studio_responsible</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Responsible</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">res.partner</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_event_event__x_studio_staff_involved" model="ir.model.fields">
+            <field name="name">x_studio_staff_involved</field>
+            <field name="model_id" ref="event.model_event_event"/>
+            <field name="field_description">Staff Involved</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">hr.employee</field>
+            <field name="relation_table">x_event_event_hr_employee_rel</field>
+            <field name="column1">event_event_id</field>
+            <field name="column2">hr_employee_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_res_partner__x_studio_salesperson" model="ir.model.fields">
+            <field name="name">x_studio_salesperson</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="field_description">Salesperson</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">hr.employee</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_user_input__x_studio_one2many_field_882_1j1i873v6" model="ir.model.fields">
+            <field name="name">x_studio_one2many_field_882_1j1i873v6</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="field_description">Nuevas líneas</field>
+            <field name="ttype">one2many</field>
+            <field name="state">manual</field>
+            <field name="relation">x_survey_user_input_line_93926</field>
+            <field name="relation_field">x_survey_user_input_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="False"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+</odoo>

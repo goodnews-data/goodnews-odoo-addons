@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="field_pos_config__x_studio_division" model="ir.model.fields">
+            <field name="name">x_studio_division</field>
+            <field name="model_id" ref="point_of_sale.model_pos_config"/>
+            <field name="field_description">Division</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': 'nsq', 'name': 'News Stands (Quioscos)', 'sequence': 0}), Command.create({'value': 'ssl', 'name': 'Street Stations (Locals)', 'sequence': 1}), Command.create({'value': 'gjc', 'name': 'GoodJob (corners)', 'sequence': 2}), Command.create({'value': 'rscc', 'name': 'Retail Stations (Centres comercials)', 'sequence': 3}), Command.create({'value': 'tvrt', 'name': 'Travel Retail (Aeropuertos)', 'sequence': 4})]"/>
+        </record>
+
+        <record id="field_pos_config__x_studio_open" model="ir.model.fields">
+            <field name="name">x_studio_open</field>
+            <field name="model_id" ref="point_of_sale.model_pos_config"/>
+            <field name="field_description">Active</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_stock_location__x_color" model="ir.model.fields">
+            <field name="name">x_color</field>
+            <field name="model_id" ref="stock.model_stock_location"/>
+            <field name="field_description">Color</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_pos_config__x_studio_combo_tax_categ_ids" model="ir.model.fields">
+            <field name="name">x_studio_combo_tax_categ_ids</field>
+            <field name="model_id" ref="point_of_sale.model_pos_config"/>
+            <field name="field_description">Tax Combo Category</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">pos.category</field>
+            <field name="relation_table">x_pos_category_pos_config_rel</field>
+            <field name="column1">pos_config_id</field>
+            <field name="column2">pos_category_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_pos_preparation_display_display__x_studio_owner_id" model="ir.model.fields">
+            <field name="name">x_studio_owner_id</field>
+            <field name="model_id" ref="pos_preparation_display.model_pos_preparation_display_display"/>
+            <field name="field_description">Owner id</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">res.users</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_res_users__x_studio_assigned_central" model="ir.model.fields">
+            <field name="name">x_studio_assigned_central</field>
+            <field name="model_id" ref="base.model_res_users"/>
+            <field name="field_description">Assigned central</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">stock.location</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+</odoo>

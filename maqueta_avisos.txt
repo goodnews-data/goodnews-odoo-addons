@@ -1,0 +1,12 @@
+no se copia la vista 6003 (Default list view for x_planificador_de_inve): su modelo x_planificador_de_inve ya no existe
+no se copia la vista 6004 (x_inventory_planner): su modelo x_planificador_de_inve ya no existe
+no se copia la vista 6005 (Default search view for x_planificador_de_inve): su modelo x_planificador_de_inve ya no existe
+no se copia la vista 6006 (Odoo Studio: x_inventory_planner customization): su modelo x_planificador_de_inve ya no existe
+no se copia la vista 6007 (Odoo Studio: Default list view for x_planificador_de_inve customization): su modelo x_planificador_de_inve ya no existe
+no se copia la vista 6008 (Odoo Studio: res.users.form customization): toca la pestaña de permisos del usuario, que Odoo genera según los grupos instalados (no es portable); lo que añade (almacén/central asignado) ya lo hace gn_base
+no se copia la vista 6009 (Default list view for x_historial_de_inventa): su modelo x_historial_de_inventa ya no existe
+no se copia la vista 6010 (Default form view for x_historial_de_inventa): su modelo x_historial_de_inventa ya no existe
+no se copia la vista 6011 (Default search view for x_historial_de_inventa): su modelo x_historial_de_inventa ya no existe
+no se copia la vista 6012 (Odoo Studio: Default form view for x_historial_de_inventa customization): su modelo x_historial_de_inventa ya no existe
+no se copia la vista 6229 (Odoo Studio: res.users.form customization): toca la pestaña de permisos del usuario, que Odoo genera según los grupos instalados (no es portable); lo que añade (almacén/central asignado) ya lo hace gn_base
+no se copia la vista 6436 (Odoo Studio: res.users.form customization): toca la pestaña de permisos del usuario, que Odoo genera según los grupos instalados (no es portable); lo que añade (almacén/central asignado) ya lo hace gn_base

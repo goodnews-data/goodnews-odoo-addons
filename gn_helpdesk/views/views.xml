@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <!-- Vistas de la acción de ventana (después de crear las vistas) -->
+        <record id="action_window_1795" model="ir.actions.act_window">
+            <field name="view_id" ref="mail.email_compose_message_wizard_form"/>
+        </record>
+</odoo>

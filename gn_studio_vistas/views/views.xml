@@ -1,0 +1,1637 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="view_5115" model="ir.ui.view">
+            <field name="name">Odoo Studio: hr.attendance.form customization</field>
+            <field name="model">hr.attendance</field>
+            <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='overtime_hours']" position="after">
+    <field name="x_studio_selection_field_5d1_1ir7hsp6o" string="Working Location"/>
+    <field name="x_studio_reasons_of_stay"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_5118" model="ir.ui.view">
+            <field name="name">Odoo Studio: survey.user_input.view.form customization</field>
+            <field name="model">survey.user_input</field>
+            <field name="inherit_id" ref="survey.survey_user_input_view_form"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='state']" position="after">
+    <button string="Inventario" name="%(gn_roturas_encuestas.action_server_1725)d" type="action" invisible="survey_id not in [20]"/>
+    <button string="Transferencias" name="%(gn_roturas_encuestas.action_server_1724)d" type="action" invisible="survey_id not in [20]"/>
+    <button string="Inventory" name="%(gn_roturas_encuestas.action_server_1725)d" type="action" invisible="survey_id in [20, 24]"/>
+    <button string="Transfers" name="%(gn_roturas_encuestas.action_server_1724)d" type="action" invisible="survey_id in [20, 24]"/>
+    <button string="Purchases" name="%(gn_roturas_encuestas.action_server_1723)d" type="action" invisible="survey_id in [20, 24]"/>
+    <button string="Crear compra" name="%(gn_roturas_encuestas.action_server_1732)d" type="action" invisible="survey_id not in [24]"/>
+  </xpath>
+  <xpath expr="//field[@name='survey_id']" position="after">
+    <field name="x_studio_solution_state_1" widget="statusbar" required="True" options="{&quot;clickable&quot;:true}"/>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[1]/group[2]/div[1]" position="after">
+    <xpath expr="//form[1]/sheet[1]/group[1]/group[1]/field[@name='create_date']" position="move"/>
+    <field name="end_datetime"/>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='page_answers']/field[@name='user_input_line_ids']/tree[1]" position="after">
+    <form string="User input line details" create="false">
+      <sheet name="studio_sheet_dfb348">
+        <group col="4" name="studio_group_aeaf90">
+          <field name="question_id"/>
+          <xpath expr="//form[1]/sheet[1]/group[1]/group[1]/field[@name='create_date']" position="move"/>
+          <field name="answer_type"/>
+          <field name="skipped"/>
+          <field name="answer_score" groups="base.group_no_one"/>
+        </group>
+        <group name="studio_group_dd4ba6">
+          <field name="value_char_box" colspan="2" invisible="answer_type != 'char_box'"/>
+          <field name="value_numerical_box" colspan="2" invisible="answer_type != 'numerical_box'"/>
+          <field name="value_date" colspan="2" invisible="answer_type != 'date'"/>
+          <field name="value_datetime" colspan="2" invisible="answer_type != 'datetime'"/>
+          <field name="value_text_box" colspan="2" invisible="answer_type != 'text_box'"/>
+          <field name="matrix_row_id" colspan="2"/>
+          <field name="suggested_answer_id" colspan="2" invisible="answer_type != 'suggestion'"/>
+        </group>
+      </sheet>
+    </form>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]" position="inside">
+    <page string="OPS" name="studio_page_5i2_1jcomlrv6">
+      <group name="studio_group_5i2">
+        <field name="x_studio_out_of_stock"/>
+      </group>
+    </page>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[1]/group[2]/field[@name='create_date']" position="attributes">
+    <attribute name="groups">spreadsheet_dashboard.group_dashboard_manager</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]" position="inside">
+    <tree string="Survey Answer Line" create="false">
+      <field name="survey_id"/>
+      <field name="user_input_id"/>
+      <field name="question_id"/>
+      <field name="create_date"/>
+      <field name="answer_type"/>
+      <field name="skipped"/>
+      <field name="x_studio_handled" optional="show"/>
+      <field name="answer_score" groups="base.group_no_one"/>
+    </tree>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='survey_id']" position="attributes">
+    <attribute name="column_invisible">True</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='user_input_id']" position="attributes">
+    <attribute name="column_invisible">True</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='create_date']" position="attributes">
+    <attribute name="column_invisible">True</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='answer_type']" position="attributes">
+    <attribute name="column_invisible">True</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='skipped']" position="attributes">
+    <attribute name="column_invisible">True</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='answer_score']" position="attributes">
+    <attribute name="column_invisible">True</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='question_id']" position="after">
+    <field name="display_name" optional="show"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='question_id']" position="attributes">
+    <attribute name="invisible">display_name in ["Omitida", "Skipped"]</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='display_name']" position="attributes">
+    <attribute name="invisible">display_name in ["Omitida", "Skipped"]</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='question_id']" position="attributes">
+    <attribute name="options">{"no_create":true}</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='x_studio_handled']" position="after">
+    <field optional="show" name="x_studio_fake"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='x_studio_handled']" position="attributes">
+    <attribute name="string"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='x_studio_fake']" position="attributes">
+    <attribute name="string"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='x_studio_fake']" position="attributes">
+    <attribute name="string"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]" position="attributes">
+    <attribute name="invisible">survey_id not in [22, 21, 20]</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]" position="inside">
+    <field name="x_studio_purchase_order"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[2]" position="attributes">
+    <attribute name="invisible">survey_id not in [24]</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[2]" position="attributes">
+    <attribute name="options">{"no_create":true}</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[2]" position="attributes">
+    <attribute name="force_save">1</attribute>
+    <attribute name="readonly">True</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/field[1]" position="attributes">
+    <attribute name="force_save">0</attribute>
+    <attribute name="readonly">False</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='x_studio_handled']" position="attributes">
+    <attribute name="widget">boolean_toggle</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='x_studio_fake']" position="attributes">
+    <attribute name="string"/>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[2]/group[1]/field[1]/tree[1]//field[@name='x_studio_fake']" position="attributes">
+    <attribute name="widget">boolean_toggle</attribute>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/field[1]/form[1]" position="attributes">
+    <attribute name="create">true</attribute>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_5119" model="ir.ui.view">
+            <field name="name">Odoo Studio: account.out.invoice.tree customization</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_in_invoice_bill_tree"/>
+            <field name="priority" eval="160"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//tree[1]" position="attributes">
+    <attribute name="multi_edit">true</attribute>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_5131" model="ir.ui.view">
+            <field name="name">Odoo Studio: stock.location.route.form customization</field>
+            <field name="model">stock.route</field>
+            <field name="inherit_id" ref="stock.stock_location_route_form_view"/>
+            <field name="priority" eval="160"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="/form[1]/sheet[1]/group[3]/field[1]" position="inside">
+    <form string="Rules">
+                    <sheet>
+                        <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                        <div class="oe_title">
+                            <label for="name"/>
+                            <h1><field name="name"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="active" invisible="1"/>
+                                <field name="company_id" invisible="1"/>
+                                <field name="picking_type_code_domain" invisible="1"/>
+                                <field name="action"/>
+                                <field name="picking_type_id"/>
+                                <field name="location_src_id" options="{'no_create': True}" required="action in ['pull', 'push', 'pull_push']" invisible="action == 'buy'"/>
+                                <field name="location_dest_id" options="{'no_create': True}"/>
+                                <field name="auto" invisible="action not in ['push', 'pull_push']"/>
+                                <field name="procure_method" invisible="action not in ['pull', 'pull_push']"/>
+                            </group>
+                            <group>
+                                <div colspan="2">
+                                    <label for="rule_message" invisible="1"/>
+                                    <div>
+                                        <field name="rule_message" readonly="1"/>
+                                    </div>
+                                </div>
+                            </group>
+                        </group>
+                        <group>
+                            <group name="apply_on" string="Applicability" groups="base.group_multi_company,base.group_no_one">
+                                <field name="warehouse_id" invisible="action == 'push'" groups="base.group_no_one"/>
+                                <field name="route_company_id" invisible="1"/>
+                                <field name="company_id" options="{'no_create': True}" required="action == 'push'" groups="base.group_multi_company"/>
+                                <field name="sequence" string="Sequence" groups="base.group_no_one"/>
+                            </group>
+                            <group name="propagation_group" string="Propagation" invisible="action == 'push'" groups="base.group_no_one">
+                                <field name="group_propagation_option"/>
+                                <field name="group_id" invisible="group_propagation_option != 'fixed'" required="group_propagation_option == 'fixed'"/>
+                                <field name="propagate_cancel"/>
+                <field name="propagate_carrier" groups="base.group_no_one"/>
+                                <field name="propagate_warehouse_id"/>
+                            </group>
+                            <group string="Options" invisible="action not in ['pull', 'push', 'pull_push']">
+                                <field name="partner_address_id" invisible="action == 'push'"/>
+                                <label for="delay"/>
+                                <div><field name="delay" class="oe_inline"/> days</div>
+                            </group>
+                        </group>
+                    </sheet>
+                    <field name="route_company_id" invisible="1"/>
+                </form>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_5785" model="ir.ui.view">
+            <field name="name">Odoo Studio: res.partner.form customization</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="priority" eval="360"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='data_naixement']" position="attributes">
+    <attribute name="force_save">0</attribute>
+    <attribute name="readonly">False</attribute>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='sales_purchases']/group[@name='container_row_2']/group[@name='sale']/field[@name='user_id']" position="before">
+    <field name="x_studio_salesperson"/>
+  </xpath>
+  <xpath expr="//field[@name='property_delivery_carrier_id']" position="after">
+    <field name="x_studio_warehouse_id"/>
+  </xpath>
+  <xpath expr="//field[@name='website_id']" position="after">
+    <field name="x_studio_portal_duplicate_control" help="Campo de texto que utiliza la GN Tools para no duplicar contactos durante el proceso de creación desde la plataforma" force_save="1" readonly="True"/>
+  </xpath>
+  <xpath expr="//field[@name='property_stock_supplier']" position="after">
+    <field name="x_studio_partial_delivery"/>
+    <field name="x_studio_number_deliveries"/>
+    <field name="x_studio_delivery_1"/>
+    <field name="x_studio_delivery_2"/>
+    <field name="x_studio_delivery_3" invisible="x_studio_number_deliveries &gt;= 0 and x_studio_number_deliveries &lt;= 2"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_5793" model="ir.ui.view">
+            <field name="name">Odoo Studio: event.event.form customization</field>
+            <field name="model">event.event</field>
+            <field name="inherit_id" ref="event.view_event_form"/>
+            <field name="priority" eval="300"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//page[@name='event_notes']" position="replace">
+    <page string="Stores" name="studio_page_7hf_1j1ie2lb9">
+      <group name="studio_group_7hf">
+        <group name="studio_group_7hf_left">
+          <field name="x_studio_pdv_involved" widget="many2many_tags" options="{&quot;no_create&quot;:true}"/>
+          <field name="x_studio_assembly"/>
+          <field name="x_studio_disassembly"/>
+        </group>
+      </group>
+    </page>
+    <page string="Products" name="studio_page_1nb_1j1ie5ie7">
+      <group name="studio_group_1nb">
+        <group name="studio_group_1nb_left">
+          <field name="x_studio_products" widget="many2many_tags" options="{&quot;no_create&quot;:true}"/>
+          <field name="x_studio_additional_information" string="Additional information"/>
+          <field name="x_studio_max_qty"/>
+        </group>
+        <group name="studio_group_1nb_right">
+          <field name="x_studio_sampling"/>
+        </group>
+      </group>
+    </page>
+    <page string="Description" name="studio_page_4ev_1j1ie9f7c">
+      <group name="studio_group_4ev">
+        <group name="studio_group_4ev_left">
+          <field name="x_studio_additional_event_information"/>
+        </group>
+        <group name="studio_group_4ev_right">
+          <field name="x_studio_dynamic"/>
+          <field name="x_studio_logistics"/>
+          <field widget="file" filename="x_studio_attachment_1_filename" name="x_studio_attachment_1"/>
+          <field widget="file" filename="x_studio_attatchment_2_filename" name="x_studio_attatchment_2"/>
+          <field widget="file" filename="x_studio_attatchment_3_filename" name="x_studio_attatchment_3"/>
+          <field widget="file" invisible="True" name="x_studio_attatchment_3_filename"/>
+          <field widget="file" invisible="True" name="x_studio_attatchment_2_filename"/>
+          <field widget="file" invisible="True" name="x_studio_attachment_1_filename"/>
+        </group>
+      </group>
+    </page>
+    <page string="Staff" name="studio_page_3ka_1j1iear86">
+      <group name="studio_group_3ka">
+        <group name="studio_group_3ka_left">
+          <field name="x_studio_staff_involved"/>
+        </group>
+        <group name="studio_group_3ka_right">
+          <field name="x_studio_uniforms"/>
+        </group>
+      </group>
+    </page>
+    <page string="Discount" name="studio_page_28n_1j7ou1988">
+      <group name="studio_group_28n">
+        <group name="studio_group_28n_left">
+          <field name="x_studio_discount"/>
+        </group>
+        <group name="studio_group_28n_right"/>
+      </group>
+    </page>
+  </xpath>
+  <xpath expr="//page[@name='questions']" position="replace"/>
+  <xpath expr="//page[@name='event_communication']" position="replace"/>
+  <xpath expr="//page[@name='tickets']" position="replace"/>
+  <xpath expr="//field[@name='badge_image']" position="replace"/>
+  <xpath expr="//field[@name='badge_format']" position="replace"/>
+  <xpath expr="//form[1]/sheet[1]/group[1]/group[@name='right_event_details']/label[1]" position="replace">
+    <field name="x_studio_attendees"/>
+  </xpath>
+  <xpath expr="//field[@name='event_type_id']" position="replace"/>
+  <xpath expr="//field[@name='lang']" position="replace"/>
+  <xpath expr="//field[@name='date_tz']" position="replace"/>
+  <xpath expr="//field[@name='menu_register_cta']" position="replace"/>
+  <xpath expr="//form[1]/sheet[1]/div[@name='event_menu_configuration']/label[2]" position="replace"/>
+  <xpath expr="//field[@name='website_menu']" position="replace"/>
+  <xpath expr="//form[1]/sheet[1]/div[@name='event_menu_configuration']/label[1]" position="replace"/>
+  <xpath expr="//field[@name='kanban_state']" position="replace"/>
+  <xpath expr="//form[1]/sheet[1]/div[@name='button_box']/button[@name='1537']" position="replace"/>
+  <xpath expr="//button[@name='1530']" position="replace"/>
+  <xpath expr="//button[@name='1535']" position="replace"/>
+  <xpath expr="//field[@name='stage_id']" position="replace"/>
+  <xpath expr="//form[1]/header[1]/button[@name='1537']" position="replace"/>
+  <xpath expr="//form[1]/sheet[1]/group[1]/group[1]/field[@name='active']" position="after">
+    <field name="x_studio_event_state" widget="statusbar" required="True" options="{&quot;clickable&quot;:true}"/>
+  </xpath>
+  <xpath expr="//field[@name='date_begin']" position="attributes">
+    <attribute name="string">Date of event</attribute>
+  </xpath>
+  <xpath expr="//field[@name='date_begin']" position="after">
+    <field name="x_studio_notice_start_date"/>
+    <field name="x_studio_type_of_event"/>
+    <field name="x_studio_type_collab"/>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[1]/group[@name='right_event_details']/field[@name='company_id']" position="after">
+    <xpath expr="//field[@name='user_id']" position="move"/>
+    <field name="x_studio_brand_involved"/>
+  </xpath>
+  <xpath expr="//field[@name='address_id']" position="attributes">
+    <attribute name="string">Contact Adress (Only if Catering)</attribute>
+  </xpath>
+  <xpath expr="//field[@name='seats_limited']" position="attributes">
+    <attribute name="invisible">True</attribute>
+    <attribute name="options">{"autosave":false}</attribute>
+    <attribute name="widget">boolean_toggle</attribute>
+  </xpath>
+  <xpath expr="//field[@name='user_id']" position="attributes">
+    <attribute name="domain"/>
+    <attribute name="widget"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_5852" model="ir.ui.view">
+            <field name="name">Odoo Studio: pos.session.form.view customization</field>
+            <field name="model">pos.session</field>
+            <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
+            <field name="priority" eval="160"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='stop_at']" position="attributes">
+    <attribute name="invisible">False</attribute>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_5870" model="ir.ui.view">
+            <field name="name">Odoo Studio: purchase.order.form customization</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_form"/>
+            <field name="priority" eval="160"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='products']/field[@name='order_line']/tree[1]/button[@name='action_product_forecast_report']" position="after">
+    <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='products']/field[@name='order_line']/tree[1]/field[@name='product_uom']" position="move"/>
+    <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='products']/field[@name='order_line']/tree[1]/field[@name='qty_received']" position="move"/>
+  </xpath>
+  <xpath expr="//field[@name='incoterm_location']" position="after">
+    <field name="x_studio_partial_delivery"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_5879" model="ir.ui.view">
+            <field name="name">Odoo Studio: survey.question.answer.view.form customization</field>
+            <field name="model">survey.question.answer</field>
+            <field name="inherit_id" ref="survey.survey_question_answer_view_form"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='value']" position="after">
+    <field name="x_studio_product_product_id"/>
+    <field name="x_studio_delivery_address" string="Entrega"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_5886" model="ir.ui.view">
+            <field name="name">Odoo Studio: Form view for survey question customization</field>
+            <field name="model">survey.question</field>
+            <field name="inherit_id" ref="survey.survey_question_form"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='answers']/field[@name='suggested_answer_ids']/tree[1]/field[@name='value']" position="after">
+    <field name="x_studio_producto_data_id" optional="show"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_5887" model="ir.ui.view">
+            <field name="name">Odoo Studio: preparation.display.form.view customization</field>
+            <field name="model">pos_preparation_display.display</field>
+            <field name="inherit_id" ref="pos_preparation_display.preparation_display_view_form"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='pos_config_ids']" position="attributes">
+    <attribute name="options">{"create":false,"no_create":true}</attribute>
+    <attribute name="required">True</attribute>
+  </xpath>
+  <xpath expr="//field[@name='category_ids']" position="after">
+    <field name="x_studio_owner_id" required="False"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_5993" model="ir.ui.view">
+            <field name="name">Odoo Studio: survey.user_input.line.view.tree customization</field>
+            <field name="model">survey.user_input.line</field>
+            <field name="inherit_id" ref="survey.survey_response_line_view_tree"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='skipped']" position="after">
+    <field name="x_studio_handled" optional="show"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_5994" model="ir.ui.view">
+            <field name="name">Odoo Studio: survey.user_input.line.view.form customization</field>
+            <field name="model">survey.user_input.line</field>
+            <field name="inherit_id" ref="survey.survey_user_input_line_view_form"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='matrix_row_id']" position="after">
+    <field name="x_studio_handled"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6002" model="ir.ui.view">
+            <field name="name">Odoo Studio: stock.picking.form customization</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="priority" eval="160"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//button[@name='print_return_label']" position="after">
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/group[1]/group[2]/field[@name='date_deadline']" position="after">
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='operations']/field[@name='move_ids_without_package']/tree[1]/field[@name='product_id']" position="attributes">
+    <attribute name="options">{"no_create":true}</attribute>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='operations']/field[@name='move_ids_without_package']/tree[1]" position="after">
+    <form string="Move Detail">
+      <field name="sequence" invisible="1"/>
+      <field name="company_id" invisible="1"/>
+      <field name="state" invisible="1"/>
+      <field name="location_id" invisible="1"/>
+      <field name="location_dest_id" invisible="1"/>
+      <field name="picking_id" invisible="1" readonly="state == 'done'"/>
+      <field name="picking_type_id" invisible="1"/>
+      <field name="is_locked" invisible="1"/>
+      <field name="picking_type_entire_packs" invisible="1"/>
+      <field name="display_assign_serial" invisible="1"/>
+      <field name="display_import_lot" invisible="1"/>
+      <field name="product_uom_category_id" invisible="1"/>
+      <field name="product_uom" invisible="1" groups="!uom.group_uom"/>
+      <field name="picking_code" invisible="1"/>
+      <field name="has_tracking" invisible="1"/>
+      <field name="show_reserved" invisible="1"/>
+      <field name="show_quant" invisible="1"/>
+      <field name="show_lots_text" invisible="1"/>
+      <field name="show_lots_m2o" invisible="1"/>
+      <field name="quantity" invisible="1"/>
+      <group name="studio_group_62491d">
+        <group name="studio_group_038dda">
+          <field name="product_id" readonly="id or move_line_ids"/>
+          <label for="product_uom_qty"/>
+          <div class="o_row" name="studio_div_b07b2e">
+            <span>
+              <field name="product_uom_qty" readonly="state != 'draft'" nolabel="1"/>
+            </span>
+            <span>
+              <field name="product_uom" groups="uom.group_uom" readonly="state != 'draft'" nolabel="1" options="{'no_open': True}"/>
+            </span>
+          </div>
+        </group>
+        <group name="studio_group_52125e"/>
+      </group>
+      <div class="d-flex" name="studio_div_fc20b0">
+        <widget class="btn btn-link btn-group" name="generate_serials" invisible="not display_assign_serial"/>
+        <widget class="btn btn-link btn-group" name="import_lots" invisible="not display_import_lot"/>
+      </div>
+      <field name="move_line_ids" readonly="state == 'cancel' or (state == 'done' and is_locked) or not product_id" context="{'tree_view_ref': 'stock.view_stock_move_line_operation_tree', 'form_view_ref': 'stock.view_move_line_mobile_form', 'default_picking_id': picking_id, 'default_move_id': id, 'default_product_id': product_id, 'default_location_id': location_id, 'default_location_dest_id': location_dest_id, 'default_company_id': company_id, 'active_picking_id': picking_id}" widget="sml_x2_many">
+        <tree editable="bottom" decoration-muted="state == 'done' and is_locked == True" default_order="result_package_id desc, location_id asc, location_dest_id asc, picking_id asc, id">
+          <field name="company_id" column_invisible="True" force_save="1"/>
+          <field name="picking_id" column_invisible="True" force_save="1"/>
+          <field name="move_id" column_invisible="True" force_save="1"/>
+          <field name="product_uom_category_id" column_invisible="True"/>
+          <field name="product_id" column_invisible="True"/>
+          <field name="package_level_id" column_invisible="True"/>
+          <field name="location_id" column_invisible="True"/>
+          <field name="location_dest_id" column_invisible="True"/>
+          <field name="package_id" column_invisible="True"/>
+          <field name="result_package_id" column_invisible="True"/>
+          <field name="tracking" column_invisible="True"/>
+          <field name="picking_type_id" column_invisible="True"/>
+          <field name="product_uom_id" column_invisible="True" groups="!uom.group_uom"/>
+          <field name="quant_id" domain="[('product_id', '=', product_id), ('location_id', 'child_of', parent.location_id)]" context="{'default_location_id': location_id, 'default_product_id': product_id, 'search_view_ref': 'stock.quant_search_view', 'tree_view_ref': 'stock.view_stock_quant_tree', 'form_view_ref': 'stock.view_stock_quant_form', 'readonly_form': True}" widget="pick_from" column_invisible="not parent.show_quant" options="{'no_create': True, 'no_open': True}"/>
+          <field name="lot_id" groups="stock.group_production_lot" column_invisible="parent.show_quant or parent.has_tracking == 'none' or not parent.show_lots_m2o" readonly="package_level_id and parent.picking_type_entire_packs" domain="[('product_id', '=', parent.product_id), ('company_id', '=', company_id)]" context="{&#10;                        'active_mo_id': context.get('active_mo_id'),&#10;                        'active_picking_id': picking_id,&#10;                        'default_company_id': parent.company_id,&#10;                        'default_product_id': parent.product_id,&#10;                        }&#10;                    "/>
+          <field name="lot_name" string="Lot/Serial Number" groups="stock.group_production_lot" placeholder="e.g. SN000001" column_invisible="parent.has_tracking == 'none' or not parent.show_lots_text" readonly="package_level_id and parent.picking_type_entire_packs"/>
+          <field name="location_dest_id" string="Store To" column_invisible="parent.show_quant and parent.picking_code != 'internal'" readonly="package_level_id and parent.picking_type_entire_packs" domain="[('id', 'child_of', parent.location_dest_id), '|', ('company_id', '=', False), ('company_id', '=', company_id), ('usage', '!=', 'view')]" groups="stock.group_stock_multi_locations"/>
+          <field name="package_id" column_invisible="1" readonly="package_level_id and parent.picking_type_entire_packs" groups="stock.group_tracking_lot"/>
+          <field name="result_package_id" readonly="package_level_id and parent.picking_type_entire_packs" groups="stock.group_tracking_lot" context="{'picking_id': picking_id}"/>
+          <field name="owner_id" column_invisible="parent.show_quant" readonly="package_level_id and parent.picking_type_entire_packs" groups="stock.group_tracking_owner"/>
+          <field name="state" column_invisible="True"/>
+          <field name="is_locked" column_invisible="True"/>
+          <field name="picking_code" column_invisible="True"/>
+          <field name="quantity" string="Quantity" readonly="(state == 'done' and is_locked) or (package_level_id and parent.picking_type_entire_packs)" sum="Quantity"/>
+          <field name="product_uom_id" options="{'no_open': True, 'no_create': True}" string="Unit of Measure" groups="uom.group_uom" readonly="(package_level_id and parent.picking_type_entire_packs) or (state == 'done' and id)"/>
+        </tree>
+      </field>
+    </form>
+  </xpath>
+  <xpath expr="//field[@name='is_manually_action_shopify_fulfillment']" position="after">
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6077" model="ir.ui.view">
+            <field name="name">Odoo Studio: product.template.product.form customization</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_only_form_view"/>
+            <field name="priority" eval="160"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='hiopos_exclude']" position="attributes">
+    <attribute name="invisible">True</attribute>
+  </xpath>
+  <xpath expr="//field[@name='hiopos_need_sync']" position="attributes">
+    <attribute name="invisible">True</attribute>
+  </xpath>
+  <xpath expr="//field[@name='service_tracking']" position="attributes">
+    <attribute name="required">True</attribute>
+  </xpath>
+  <xpath expr="//field[@name='description_sale']" position="before">
+    <field name="website_meta_title"/>
+  </xpath>
+  <xpath expr="//field[@name='description_sale']" position="after">
+    <field name="x_studio_allergens_text"/>
+    <field name="x_studio_allergens" widget="many2many_tags"/>
+    <field name="x_studio_allergy_traces" widget="many2many_tags"/>
+    <field name="x_studio_kcal"/>
+  </xpath>
+  <xpath expr="//field[@name='seller_ids']" position="inside">
+    <tree string="Vendor Information" multi_edit="1" editable="bottom">
+      <field name="sequence" widget="handle"/>
+      <field name="partner_id" readonly="0"/>
+      <field name="city_id"/>
+      <field name="product_id" optional="hide" readonly="0" column_invisible="context.get('product_template_invisible_variant', False)" groups="product.group_product_variant" domain="[('product_tmpl_id', '=', context.get('default_product_tmpl_id'))] if context.get('default_product_tmpl_id') else [('product_tmpl_id', '=', product_tmpl_id)]" options="{'no_create': True, 'no_open': True}"/>
+      <field name="purchase_requisition_id" optional="hide"/>
+      <field name="product_tmpl_id" string="Product" readonly="1" column_invisible="context.get('visible_product_tmpl_id', True)"/>
+      <field name="product_name" optional="hide"/>
+      <field name="product_code" optional="hide"/>
+      <field name="date_start" optional="hide"/>
+      <field name="date_end" optional="hide"/>
+      <field name="company_id" readonly="0" groups="base.group_multi_company" optional="hide"/>
+      <field name="min_qty" optional="hide"/>
+      <field name="product_uom" groups="uom.group_uom" optional="hide" readonly="False"/>
+      <field name="price" string="Price"/>
+      <field name="discount" optional="hide"/>
+      <field name="currency_id" groups="base.group_multi_currency"/>
+      <field name="delay" optional="show"/>
+      <field name="company_id" column_invisible="True"/>
+    </tree>
+    <form string="Vendor Information">
+      <sheet>
+        <group name="studio_group_c0c026">
+          <group name="vendor" string="Vendor">
+            <field name="product_variant_count" invisible="1"/>
+            <field name="partner_id" context="{'res_partner_search_mode': 'supplier'}"/>
+            <field name="product_name"/>
+            <field name="product_code"/>
+            <field name="purchase_requisition_id" invisible="not purchase_requisition_id"/>
+            <label for="delay"/>
+            <div name="studio_div_97fccc">
+              <field name="delay" class="oe_inline"/> days
+                            </div>
+          </group>
+          <group string="Pricelist" name="studio_group_fbd7cc">
+            <field name="product_tmpl_id" string="Product" invisible="context.get('visible_product_tmpl_id', True)"/>
+            <field name="product_id" groups="product.group_product_variant" options="{'no_create': True}"/>
+            <label for="min_qty"/>
+            <div class="o_row" name="studio_div_4bdff0">
+              <field name="min_qty"/>
+              <field name="product_uom" groups="uom.group_uom"/>
+            </div>
+            <label for="price" string="Unit Price"/>
+            <div class="o_row" name="studio_div_61bc93">
+              <field name="price" class="oe_inline"/>
+              <field name="currency_id" groups="base.group_multi_currency"/>
+            </div>
+            <label for="date_start" string="Validity"/>
+            <div class="o_row" name="studio_div_3aad52">
+              <field name="date_start" class="oe_inline"/> to <field name="date_end" class="oe_inline"/>
+            </div>
+            <field name="discount"/>
+            <field name="company_id" options="{'no_create': True}"/>
+            <field name="city_id"/>
+          </group>
+        </group>
+      </sheet>
+    </form>
+  </xpath>
+  <xpath expr="//form[@name='Product Template']/sheet[@name='product_form']/notebook[1]/page[@name='inventory']/group[@name='inventory']/group[@name='group_lots_and_weight']/div[@name='volume']" position="after">
+    <field name="x_measurement"/>
+    <field name="x_studio_unit_of_measure"/>
+  </xpath>
+  <xpath expr="//field[@name='country_of_origin']" position="after">
+    <field name="x_studio_inventory_group_tag" widget="many2many_tags" options="{&quot;no_create&quot;:true}"/>
+    <field name="x_studio_production" widget="boolean_toggle" string="Producto a fabricar"/>
+    <field name="x_studio_vida_util_abierto"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6100" model="ir.ui.view">
+            <field name="name">Odoo Studio: pos.custom.discount customization</field>
+            <field name="model">pos.custom.discount</field>
+            <field name="inherit_id" ref="pos_custom_discounts.pos_discount_form_view"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='available_in_pos']" position="before">
+    <field name="x_studio_active_1" widget="boolean_toggle"/>
+  </xpath>
+  <xpath expr="//field[@name='available_in_pos']" position="attributes">
+    <attribute name="invisible">False</attribute>
+  </xpath>
+  <xpath expr="//field[@name='available_in_pos']" position="after">
+    <field name="x_studio_available_in_pos" widget="many2many_tags" invisible="False" string="Scheduled in Pos"/>
+    <field name="x_studio_start_date"/>
+    <field name="x_studio_end_date"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6204" model="ir.ui.view">
+            <field name="name">Odoo Studio: survey.user_input.view.tree customization</field>
+            <field name="model">survey.user_input</field>
+            <field name="inherit_id" ref="survey.survey_user_input_view_tree"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='attempts_number']" position="attributes">
+    <attribute name="optional">hide</attribute>
+  </xpath>
+  <xpath expr="//field[@name='deadline']" position="attributes">
+    <attribute name="optional">hide</attribute>
+  </xpath>
+  <xpath expr="//field[@name='scoring_success']" position="attributes">
+    <attribute name="optional">hide</attribute>
+  </xpath>
+  <xpath expr="//field[@name='scoring_percentage']" position="attributes">
+    <attribute name="optional">hide</attribute>
+  </xpath>
+  <xpath expr="//field[@name='state']" position="attributes">
+    <attribute name="optional">hide</attribute>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6230" model="ir.ui.view">
+            <field name="name">Odoo Studio: product.category.form customization</field>
+            <field name="model">product.category</field>
+            <field name="inherit_id" ref="product.product_category_form_view"/>
+            <field name="priority" eval="160"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//form[1]/sheet[1]" position="before">
+    <header/>
+  </xpath>
+  <xpath expr="//field[@name='newspaper']" position="after">
+    <field name="complete_name" force_save="0" readonly="False"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6234" model="ir.ui.view">
+            <field name="name">Odoo Studio: stock.picking.kanban customization</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.stock_picking_kanban"/>
+            <field name="priority" eval="1000"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='picking_properties']" position="after">
+    <field name="purchase_id" display="full"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6237" model="ir.ui.view">
+            <field name="name">Odoo Studio: pos.config.tree.view customization</field>
+            <field name="model">pos.config</field>
+            <field name="inherit_id" ref="point_of_sale.view_pos_config_tree"/>
+            <field name="priority" eval="160"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//tree[1]/field[@name='name']" position="after">
+    <field optional="show" name="x_studio_combo_tax_categ_ids" widget="many2many_tags" options="{&quot;no_create&quot;:true}"/>
+    <field optional="show" name="x_studio_division"/>
+  </xpath>
+  <xpath expr="//field[@name='company_id']" position="after">
+    <field name="division" optional="show"/>
+    <field optional="show" name="x_studio_open"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6238" model="ir.ui.view">
+            <field name="name">Odoo Studio: helpdesk.ticket.tree customization</field>
+            <field name="model">helpdesk.ticket</field>
+            <field name="inherit_id" ref="helpdesk.helpdesk_tickets_view_tree"/>
+            <field name="priority" eval="160"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='rating_last_text']" position="replace"/>
+  <xpath expr="//field[@name='sla_deadline']" position="replace"/>
+  <xpath expr="//field[@name='sla_status_ids']" position="replace"/>
+  <xpath expr="//field[@name='my_activity_date_deadline']" position="replace"/>
+  <xpath expr="//field[@name='activity_ids']" position="replace"/>
+  <xpath expr="//tree[1]/field[@name='company_id'][3]" position="replace"/>
+  <xpath expr="//tree[1]/field[@name='company_id'][2]" position="replace"/>
+  <xpath expr="//field[@name='partner_id']" position="replace"/>
+  <xpath expr="//field[@name='user_id']" position="replace"/>
+  <xpath expr="//tree[1]/field[@name='team_id']" position="replace">
+    <xpath expr="//tree[1]/field[@name='name']" position="move"/>
+    <field name="x_studio_incidencia_detectada" optional="show"/>
+    <field name="x_studio_barista_name" optional="show"/>
+    <xpath expr="//field[@name='stage_id']" position="move"/>
+    <field name="x_studio_city" optional="show"/>
+    <field name="x_studio_pdv" optional="show" options="{&quot;no_create&quot;:true}"/>
+    <field name="x_studio_priority" optional="show" string="Criticidad"/>
+    <field name="x_studio_incidencia_catalogo" optional="show"/>
+    <field name="x_studio_resumen_problema" optional="hide"/>
+  </xpath>
+  <xpath expr="//field[@name='priority']" position="replace"/>
+  <xpath expr="//field[@name='ticket_ref']" position="replace"/>
+  <xpath expr="//tree[1]" position="attributes">
+    <attribute name="default_order">create_date desc</attribute>
+  </xpath>
+  <xpath expr="//field[@name='create_date']" position="attributes">
+    <attribute name="optional">show</attribute>
+  </xpath>
+  <xpath expr="//field[@name='kanban_state']" position="after">
+    <field name="x_studio_intervention_date" optional="show"/>
+  </xpath>
+  <xpath expr="//tree[1]/field[@name='name']" position="attributes">
+    <attribute name="optional">show</attribute>
+    <attribute name="readonly">True</attribute>
+    <attribute name="string"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6247" model="ir.ui.view">
+            <field name="name">Odoo Studio: helpdesk.ticket.form customization</field>
+            <field name="model">helpdesk.ticket</field>
+            <field name="inherit_id" ref="helpdesk.helpdesk_ticket_view_form"/>
+            <field name="priority" eval="900"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='description']/field[@name='description']" position="replace">
+    <field name="x_studio_resumen_problema"/>
+  </xpath>
+  <xpath expr="//field[@name='properties']" position="replace"/>
+  <xpath expr="//form[1]/sheet[1]/group[1]/group[2]/label[1]" position="replace">
+    <field name="create_date" force_save="1" readonly="True"/>
+    <field name="x_studio_responsable" options="{&quot;no_create&quot;:true}"/>
+    <field name="partner_email" invisible="True"/>
+    <field name="x_studio_barista_name"/>
+    <field name="x_studio_barista_id" force_save="1" readonly="True" invisible="True"/>
+    <field name="x_studio_valoracion" widget="priority"/>
+    <field name="x_studio_comentario_valoracion"/>
+    <field name="x_studio_reopened"/>
+    <field name="x_studio_status" string="Estado"/>
+    <field name="x_studio_reopened_tickets" widget="many2many_tags" options="{&quot;no_create&quot;:true}" invisible="x_studio_reopened != True"/>
+    <field name="color" options="{&quot;human_readable&quot;:true,&quot;enable_formatting&quot;:false}" invisible="True"/>
+  </xpath>
+  <xpath expr="//field[@name='active']" position="after">
+    <field name="x_studio_incidencia_detectada"/>
+    <field name="x_studio_priority"/>
+  </xpath>
+  <xpath expr="//field[@name='team_id']" position="attributes">
+    <attribute name="force_save">0</attribute>
+    <attribute name="readonly">False</attribute>
+  </xpath>
+  <xpath expr="//field[@name='priority']" position="attributes">
+    <attribute name="invisible">True</attribute>
+  </xpath>
+  <xpath expr="//field[@name='tag_ids']" position="after">
+    <field name="x_studio_pdv"/>
+    <field name="x_studio_city" widget="selection"/>
+    <field name="x_studio_intervention_date"/>
+    <field name="x_studio_maintenance_request_id" invisible="not x_studio_intervention_date" widget="one2many">
+      <tree string="maintenance Request" multi_edit="1" sample="1">
+        <field name="message_needaction" column_invisible="True"/>
+        <field name="name"/>
+        <field name="x_studio_survey" optional="show"/>
+        <field name="duration" optional="show"/>
+        <field name="stage_id" options="{&quot;no_create&quot;:true}"/>
+        <field name="activity_exception_decoration" widget="activity_exception"/>
+      </tree>
+    </field>
+  </xpath>
+  <xpath expr="//field[@name='partner_id']" position="attributes">
+    <attribute name="invisible">True</attribute>
+  </xpath>
+  <xpath expr="//field[@name='email_cc']" position="attributes">
+    <attribute name="invisible">True</attribute>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='extra_info']/group[1]/field[@name='company_id']" position="before">
+    <field name="x_studio_incidencia_catalogo"/>
+    <field name="x_studio_visual_elements"/>
+    <field name="x_studio_recursos_visuales_mov"/>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]" position="inside">
+    <page string="Supplier" name="studio_page_5fp_1jlm7qkb0">
+      <group name="studio_group_5fp">
+        <group name="studio_group_5fp_left">
+          <field name="x_studio_supplier" domain="[&quot;|&quot;, (&quot;name&quot;, &quot;ilike&quot;, &quot;inciden&quot;), (&quot;child_ids&quot;, &quot;ilike&quot;, &quot;inciden&quot;)]"/>
+          <field name="x_studio_fecha_email"/>
+          <field name="x_studio_email_enviado"/>
+          <field name="x_studio_notas"/>
+        </group>
+        <group name="studio_group_5fp_right">
+          <field name="x_studio_invoice" invisible="not x_studio_supplier"/>
+        </group>
+      </group>
+    </page>
+    <page string="Status" name="studio_page_37a_1jselvm27">
+      <group name="studio_group_37a">
+        <group name="studio_group_37a_left"/>
+        <group name="studio_group_37a_right"/>
+      </group>
+    </page>
+  </xpath>
+  <xpath expr="/form[1]/sheet[1]/group[1]/group[1]/field[13]" position="inside">
+    <form string="Maintenance Request">
+                <field name="company_id" invisible="1"/>
+                <field name="category_id" invisible="1"/>
+                <header>
+                    <button string="Cancel" name="archive_equipment_request" type="object" invisible="archive"/>
+                    <button string="Reopen Request" name="reset_equipment_request" type="object" invisible="not archive"/>
+                    <field name="stage_id" widget="statusbar" options="{'clickable': '1'}" invisible="archive"/>
+                </header>
+                <sheet>
+                    <div invisible="not archive">
+                        <span class="badge text-bg-warning float-end">Canceled</span>
+                    </div>
+                    <field name="kanban_state" widget="state_selection"/>
+                    <div class="oe_title">
+                        <label for="name" string="Request"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Screen not working"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id" string="Created By" widget="many2one_avatar_employee" options="{'no_create_edit': True, 'no_open': True}"/>
+            <field name="equipment_id" context="{'default_company_id':company_id, 'default_category_id':category_id}"/>
+                            <field name="category_id" groups="maintenance.group_equipment_manager" context="{'default_company_id':company_id}" invisible="not equipment_id"/>
+                            <field name="request_date" readonly="True"/>
+                            <field name="done" invisible="1"/>
+                            <field name="close_date" readonly="True" invisible="not done"/>
+                            <field name="archive" invisible="1"/>
+                            <field name="maintenance_type" widget="radio"/>
+    <field name="x_studio_ticket_origin" force_save="1" readonly="True"/>
+    <field name="x_studio_survey" options="{&quot;create_name_field&quot;:&quot;survey_id&quot;,&quot;no_create&quot;:true}"/>
+                        </group>
+                        <group>
+                            <field name="maintenance_team_id" options="{'no_create': True, 'no_open': True}"/>
+    <field name="x_studio_pdv" options="{&quot;no_create&quot;:true}"/>
+                            <field name="user_id" string="Responsible"/>
+                            <field name="schedule_date"/>
+                            <label for="duration"/>
+                            <div>
+                                <field name="duration" widget="float_time" class="oe_inline"/> <span class="ml8">hours</span>
+                            </div>
+                            <label for="recurring_maintenance" invisible="maintenance_type == 'corrective'"/>
+                            <div class="d-inline-flex" invisible="maintenance_type == 'corrective'">
+                                <field name="recurring_maintenance" nolabel="1" class="ms-0" style="width: fit-content;"/>
+                            </div>
+                            <label for="repeat_interval" invisible="not recurring_maintenance"/>
+                            <div class="d-flex" invisible="not recurring_maintenance">
+                                <field name="repeat_interval" required="recurring_maintenance" class="me-2" style="max-width: 2rem !important;"/>
+                                <field name="repeat_unit" required="recurring_maintenance" class="me-2" style="max-width: 4rem !important;"/>
+                                <field name="repeat_type" required="recurring_maintenance" class="me-2" style="max-width: 15rem !important;"/>
+                                <field name="repeat_until" invisible="repeat_type != 'until'" required="repeat_type == 'until'" class="me-2"/>
+                            </div>
+                            <field name="priority" widget="priority"/>
+                            <field name="email_cc" string="Email cc" groups="base.group_no_one"/>
+                            <field name="company_id" options="{'no_create': True}" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Notes">
+                            <field name="description" placeholder="Internal Notes"/>
+                        </page>
+                        <page string="Instructions">
+                            <group col="1">
+                                <field name="instruction_type" widget="radio" nolabel="1"/>
+                                <field name="instruction_pdf" help="Upload your PDF file." widget="pdf_viewer" invisible="instruction_type != 'pdf'" required="instruction_type == 'pdf'" nolabel="1"/>
+                                <field name="instruction_google_slide" placeholder="Google Slide Link" widget="embed_viewer" invisible="instruction_type != 'google_slide'" required="instruction_type == 'google_slide'" nolabel="1"/>
+                                <field name="instruction_text" placeholder="Your instructions" invisible="instruction_type != 'text'" nolabel="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                </form>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6248" model="ir.ui.view">
+            <field name="name">Odoo Studio: quality.check.view.form customization</field>
+            <field name="model">quality.check</field>
+            <field name="inherit_id" ref="quality_control.quality_check_view_form"/>
+            <field name="priority" eval="160"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//form[1]/sheet[1]/div[@name='button_box']/button[@name='action_quality_worksheet']" position="attributes">
+    <attribute name="studio_approval">False</attribute>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/div[@name='button_box']/button[@name='action_quality_worksheet'][2]" position="attributes">
+    <attribute name="studio_approval">False</attribute>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6258" model="ir.ui.view">
+            <field name="name">Odoo Studio: product.category.list customization</field>
+            <field name="model">product.category</field>
+            <field name="inherit_id" ref="product.product_category_list_view"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='display_name']" position="before">
+    <field name="complete_name" optional="show"/>
+    <field name="parent_id" optional="show"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6266" model="ir.ui.view">
+            <field name="name">Odoo Studio: Abastecimiento POS Vista Busqueda customization</field>
+            <field name="model">pos.resupply.order</field>
+            <field name="inherit_id" ref="goodnews.pos_resupply_order_filter"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='pos_config_id']" position="before">
+    <field name="product_ids"/>
+  </xpath>
+  <xpath expr="//field[@name='pos_config_id']" position="after">
+    <filter domain="[(&quot;pos_config_id.city_id&quot;, &quot;in&quot;, [1])]" name="studio_filter_97n_1jnothhn7" string="Barcelona"/>
+    <filter domain="[(&quot;pos_config_id.city_id&quot;, &quot;in&quot;, [2])]" name="studio_filter_65s_1jnothu5e" string="Madrid"/>
+    <filter domain="[(&quot;pos_config_id.city_id&quot;, &quot;in&quot;, [3])]" name="studio_filter_1h5_1jnotic6m" string="París"/>
+    <filter domain="[(&quot;pos_config_id.city_id&quot;, &quot;in&quot;, [6])]" name="studio_filter_8ut_1jnotisau" string="Amsterdam"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6282" model="ir.ui.view">
+            <field name="name">Odoo Studio: helpdesk.ticket.search customization</field>
+            <field name="model">helpdesk.ticket</field>
+            <field name="inherit_id" ref="helpdesk.helpdesk_tickets_view_search"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//filter[@name='sla_deadline']" position="replace">
+    <filter name="studio_group_by_1c2_1jo162q47" string="Store" context="{'group_by': 'x_studio_pdv'}"/>
+    <filter name="studio_group_by_80q_1jo163cdv" string="City" context="{'group_by': 'x_studio_city'}"/>
+    <filter name="studio_group_by_80f_1jo16497g" string="Category" context="{'group_by': 'tag_ids'}"/>
+    <filter name="studio_group_by_7jj_1jo164pgq" string="Area" context="{'group_by': 'ticket_type_id'}"/>
+  </xpath>
+  <xpath expr="//filter[@name='company']" position="replace"/>
+  <xpath expr="//filter[@name='partner']" position="replace"/>
+  <xpath expr="//search[1]/group[1]/filter[@name='priority']" position="replace"/>
+  <xpath expr="//filter[@name='tag']" position="replace"/>
+  <xpath expr="//search[1]/group[1]/filter[@name='sla_ids']" position="replace"/>
+  <xpath expr="//filter[@name='state']" position="replace"/>
+  <xpath expr="//search[1]/separator[8]" position="replace">
+    <filter domain="[(&quot;x_studio_reopened&quot;, &quot;=&quot;, True)]" name="studio_filter_5di_1jo15uqu4" string="Reopened"/>
+  </xpath>
+  <xpath expr="//search[1]/separator[7]" position="replace">
+    <filter domain="[(&quot;stage_id&quot;, &quot;not in&quot;, [4, 5])]" name="studio_filter_1a4_1joh24cnb" string="Open"/>
+  </xpath>
+  <xpath expr="//filter[@name='message_needaction']" position="replace"/>
+  <xpath expr="//search[1]/separator[6]" position="replace"/>
+  <xpath expr="//filter[@name='creation_date']" position="replace"/>
+  <xpath expr="//search[1]/separator[4]" position="replace"/>
+  <xpath expr="//search[1]/separator[3]" position="replace">
+    <filter domain="[(&quot;x_studio_city&quot;, &quot;=&quot;, &quot;2&quot;)]" name="studio_filter_gp_1jo15ra1v" string="Madrid"/>
+  </xpath>
+  <xpath expr="//filter[@name='sla_failed']" position="replace"/>
+  <xpath expr="//filter[@name='sla_inprogress']" position="replace"/>
+  <xpath expr="//filter[@name='sla_success']" position="replace"/>
+  <xpath expr="//filter[@name='my_customers']" position="replace"/>
+  <xpath expr="//field[@name='properties']" position="replace">
+    <field name="x_studio_barista_name"/>
+  </xpath>
+  <xpath expr="//field[@name='description']" position="replace"/>
+  <xpath expr="//field[@name='company_id']" position="replace"/>
+  <xpath expr="//search[1]/field[@name='sla_ids']" position="replace"/>
+  <xpath expr="//field[@name='stage_id']" position="replace"/>
+  <xpath expr="//field[@name='team_id']" position="replace">
+    <field name="x_studio_pdv"/>
+  </xpath>
+  <xpath expr="//field[@name='partner_id']" position="replace"/>
+  <xpath expr="//field[@name='user_id']" position="replace"/>
+  <xpath expr="//field[@name='tag_ids']" position="replace"/>
+  <xpath expr="//filter[@name='urgent_priority']" position="attributes">
+    <attribute name="domain">[("x_studio_priority", "=", "3")]</attribute>
+    <attribute name="string">Critical</attribute>
+  </xpath>
+  <xpath expr="//filter[@name='high_priority']" position="attributes">
+    <attribute name="domain">[("x_studio_priority", "=", "2")]</attribute>
+  </xpath>
+  <xpath expr="//filter[@name='medium_priority']" position="attributes">
+    <attribute name="domain">[("x_studio_priority", "=", "1")]</attribute>
+    <attribute name="string">Low Priority</attribute>
+  </xpath>
+  <xpath expr="//filter[@name='low_priority']" position="attributes">
+    <attribute name="domain">[("x_studio_priority", "=", "0")]</attribute>
+    <attribute name="string">Not assigned</attribute>
+  </xpath>
+  <xpath expr="//filter[@name='is_open']" position="attributes">
+    <attribute name="domain">[("x_studio_city", "=", "1")]</attribute>
+    <attribute name="string">Barcelona</attribute>
+  </xpath>
+  <xpath expr="//filter[@name='is_close']" position="attributes">
+    <attribute name="domain">[("x_studio_city", "in", ["1", "2"])]</attribute>
+    <attribute name="string">España</attribute>
+  </xpath>
+  <xpath expr="//filter[@name='closed_last_7days']" position="attributes">
+    <attribute name="domain">[("x_studio_city", "=", "3")]</attribute>
+    <attribute name="string">Paris</attribute>
+  </xpath>
+  <xpath expr="//filter[@name='closed_last_30days']" position="attributes">
+    <attribute name="domain">[("x_studio_city", "=", "5")]</attribute>
+    <attribute name="string">Amsterdam</attribute>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6283" model="ir.ui.view">
+            <field name="name">Odoo Studio: survey.question.answer.view.search customization</field>
+            <field name="model">survey.question.answer</field>
+            <field name="inherit_id" ref="survey.survey_question_answer_view_search"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='question_id']" position="after">
+    <field name="value"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6284" model="ir.ui.view">
+            <field name="name">Odoo Studio: pos.order.form customization</field>
+            <field name="model">pos.order</field>
+            <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+            <field name="priority" eval="160"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//button[@name='action_pos_order_invoice']" position="attributes">
+    <attribute name="invisible">True</attribute>
+  </xpath>
+  <xpath expr="//form[1]/header[1]/field[@name='refunded_orders_count']" position="after">
+    <button string="Corregir ticket" name="%(gn_pos_correcciones.action_server_1822)d" type="action"/>
+  </xpath>
+  <xpath expr="//button[@name='action_view_invoice']" position="attributes">
+    <attribute name="invisible">True</attribute>
+  </xpath>
+  <xpath expr="//field[@name='lines']" position="attributes">
+    <attribute name="force_save">0</attribute>
+    <attribute name="readonly">False</attribute>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='products']/field[@name='lines']/tree[1]/field[@name='price_subtotal_incl']" position="after">
+    <field optional="show" name="x_studio_ticket_error" string="Ticket error"/>
+  </xpath>
+  <xpath expr="//field[@name='pos_reference']" position="after">
+    <field name="ticket_code" invisible="True"/>
+  </xpath>
+  <xpath expr="//field[@name='pricelist_id']" position="after">
+    <field name="shipping_date"/>
+  </xpath>
+  <xpath expr="//field[@name='picking_ids']" position="attributes">
+    <attribute name="invisible">x_studio_stockpicking</attribute>
+  </xpath>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='extra']/group[1]/group[2]/field[@name='picking_count']" position="after">
+    <field name="x_studio_product" widget="many2many_tags" options="{&quot;no_create&quot;:true}" domain="[&quot;&amp;&quot;, (&quot;product_variant_ids.type&quot;, &quot;=&quot;, &quot;product&quot;), (&quot;product_variant_ids.available_in_pos&quot;, &quot;=&quot;, True)]"/>
+    <field name="x_studio_stockpicking" options="{&quot;no_create&quot;:true}" string="Recogida" invisible="picking_ids" force_save="1" readonly="True"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6285" model="ir.ui.view">
+            <field name="name">Odoo Studio: equipment.request.form customization</field>
+            <field name="model">maintenance.request</field>
+            <field name="inherit_id" ref="maintenance.hr_equipment_request_view_form"/>
+            <field name="priority" eval="160"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='maintenance_type']" position="after">
+    <field name="x_studio_ticket_origin" force_save="1" readonly="True"/>
+    <field name="x_studio_survey" options="{&quot;create_name_field&quot;:&quot;survey_id&quot;,&quot;no_create&quot;:true}"/>
+  </xpath>
+  <xpath expr="//field[@name='maintenance_team_id']" position="after">
+    <field name="x_studio_pdv" options="{&quot;no_create&quot;:true}"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6287" model="ir.ui.view">
+            <field name="name">Odoo Studio: helpdesk.ticket.kanban customization</field>
+            <field name="model">helpdesk.ticket</field>
+            <field name="inherit_id" ref="helpdesk.helpdesk_ticket_view_kanban"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//kanban[1]/templates[1]/t[2]/div[1]/div[1]/div[3]/div[1]/field[@name='activity_ids']" position="replace"/>
+  <xpath expr="//kanban[1]/templates[1]/t[2]/div[1]/div[1]/div[3]/div[1]/field[@name='priority']" position="replace"/>
+  <xpath expr="//field[@name='commercial_partner_id']" position="replace"/>
+  <xpath expr="//kanban[1]" position="attributes">
+    <attribute name="default_group_by">x_studio_priority</attribute>
+  </xpath>
+  <xpath expr="//kanban[1]/templates[1]/t[2]/div[1]/div[1]/div[1]/strong[1]" position="inside"><xpath expr="//kanban[1]/templates[1]/t[2]/div[1]/div[1]/div[1]/strong[1]/field[@name='name']" position="move"/><xpath expr="//field[@name='ticket_ref']" position="move"/><field name="x_studio_incidencia_detectada" display="full" options="{&quot;line_breaks&quot;:true}" widget="text_emojis"/>) (#)</xpath>
+  <xpath expr="//field[@name='ticket_type_id']" position="after">
+    <field name="x_studio_intervention_date" display="full"/>
+    <field name="x_studio_pdv" display="full" options="{&quot;no_create&quot;:true}"/>
+    <field name="create_date" display="full"/>
+    <field name="x_studio_priority" display="full"/>
+  </xpath>
+  <xpath expr="//kanban[1]/templates[1]/t[2]/div[1]/div[1]/div[2]/field[@name='tag_ids']" position="after">
+    <field name="x_studio_city" display="full" widget="badge"/>
+  </xpath>
+  <xpath expr="/kanban[1]/templates[1]/t[2]/div[1]/div[1]/div[1]/strong[1]/field[3]" position="attributes">
+    <attribute name="widget">text</attribute>
+  </xpath>
+  <xpath expr="/kanban[1]/templates[1]/t[2]/div[1]/div[1]/div[1]/strong[1]/field[3]" position="attributes">
+    <attribute name="widget">CopyClipboardText</attribute>
+  </xpath>
+  <xpath expr="/kanban[1]/templates[1]/t[2]/div[1]/div[1]/div[1]/strong[1]/field[2]" position="attributes">
+    <attribute name="invisible">True</attribute>
+  </xpath>
+  <xpath expr="/kanban[1]/templates[1]/t[2]/div[1]/div[1]/div[1]/strong[1]/field[1]" position="attributes">
+    <attribute name="invisible">True</attribute>
+  </xpath>
+  <xpath expr="/kanban[1]/templates[1]/t[2]/div[1]/div[1]/div[1]/strong[1]/field[1]" position="attributes">
+    <attribute name="invisible">False</attribute>
+  </xpath>
+  <xpath expr="/kanban[1]/templates[1]/t[2]/div[1]/div[1]/div[1]/strong[1]/field[3]" position="replace"/>
+  <xpath expr="/kanban[1]/templates[1]/t[2]/div[1]/div[1]/div[1]/strong[1]/field[2]" position="attributes">
+    <attribute name="invisible">True</attribute>
+  </xpath>
+  <xpath expr="/kanban[1]/templates[1]/t[2]/div[1]/div[1]/div[2]/div[1]/field[1]" position="attributes">
+    <attribute name="options">{"no_create":true}</attribute>
+  </xpath>
+  <xpath expr="/kanban[1]/templates[1]/t[2]/div[1]/div[1]/div[1]/strong[1]/field[1]" position="after">
+    <field name="x_studio_incidencia_catalogo" display="full"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6368" model="ir.ui.view">
+            <field name="name">Odoo Studio: account.move.form customization</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_move_form"/>
+            <field name="priority" eval="160"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='other_info']/group[1]/group[@name='accounting_info_group']/field[@name='to_check']" position="after">
+    <field name="x_studio_tickets" widget="many2many_tags" string="Tickets"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6381" model="ir.ui.view">
+            <field name="name">Odoo Studio: event.event.tree customization</field>
+            <field name="model">event.event</field>
+            <field name="inherit_id" ref="event.view_event_tree"/>
+            <field name="priority" eval="990"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='address_id']" position="after">
+    <field name="is_published" optional="show"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6382" model="ir.ui.view">
+            <field name="name">Odoo Studio: documents facet form view with folder customization</field>
+            <field name="model">documents.facet</field>
+            <field name="inherit_id" ref="documents.facet_view_form_with_folder"/>
+            <field name="priority" eval="9990"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='sequence']" position="after">
+    <field name="id" optional="show"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6390" model="ir.ui.view">
+            <field name="name">Odoo Studio: product.pricelist.form customization</field>
+            <field name="model">product.pricelist</field>
+            <field name="inherit_id" ref="product.product_pricelist_view"/>
+            <field name="priority" eval="160"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="/form[1]/sheet[1]/notebook[1]/page[1]/field[1]" position="inside">
+    <form string="Pricelist Rule">
+                <sheet>
+                    <field name="name" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+                    <group name="pricelist_rule_computation" groups="product.group_sale_pricelist" string="Price Computation">
+                        <group name="pricelist_rule_method">
+                            <field name="compute_price" string="Computation" widget="radio"/>
+                        </group>
+                        <div class="alert alert-info" role="alert" groups="uom.group_uom">
+                            The computed price is expressed in the default Unit of Measure of the product.
+                        </div>
+                    </group>
+                    <group name="pricelist_rule_base" groups="product.group_sale_pricelist">
+                        <group>
+                            <field name="price" invisible="1"/>
+                            <field name="fixed_price" widget="monetary" invisible="compute_price != 'fixed'" options="{'field_digits': True}"/>
+                            <label for="percent_price" string="Discount" invisible="compute_price != 'percentage'"/>
+                            <div class="o_row" invisible="compute_price != 'percentage'">
+                                <field name="percent_price" class="oe_inline" invisible="compute_price != 'percentage'"/>%
+                            </div>
+                            <field name="base" invisible="compute_price != 'formula'"/>
+                            <field name="base_pricelist_id" invisible="compute_price != 'formula' or base != 'pricelist'" readonly="base != 'pricelist'" required="compute_price == 'formula' and base == 'pricelist'"/>
+                            <label for="price_discount" string="Discount" invisible="compute_price != 'formula'"/>
+                            <div class="o_row" invisible="compute_price != 'formula'">
+                                <field name="price_discount"/>
+                                <span>%</span>
+                            </div>
+                            <field name="price_surcharge" widget="monetary" string="Extra Fee" invisible="compute_price != 'formula'"/>
+                            <field name="price_round" string="Rounding Method" invisible="compute_price != 'formula'"/>
+                            <label string="Margins" for="price_min_margin" invisible="compute_price != 'formula'"/>
+                            <div class="o_row" invisible="compute_price != 'formula'">
+                                <field name="price_min_margin" string="Min. Margin" class="oe_inline" widget="monetary" nolabel="1" options="{'field_digits': True}"/>
+                                <i class="fa fa-long-arrow-right mx-2 oe_edit_only" aria-label="Arrow icon" title="Arrow"/>
+                                <field name="price_max_margin" string="Max. Margin" class="oe_inline" widget="monetary" nolabel="1" options="{'field_digits': True}"/>
+                            </div>
+                        </group>
+                        <div class="alert alert-info" role="alert" style="white-space: pre;" invisible="compute_price != 'formula'">
+                            <field name="rule_tip"/>
+                        </div>
+                    </group>
+
+                    <group string="Conditions">
+                        <group name="pricelist_rule_target">
+                            <field name="applied_on" widget="radio"/>
+                            <field name="categ_id" options="{'no_create':1}" invisible="applied_on != '2_product_category'" required="applied_on == '2_product_category'"/>
+                            <field name="product_tmpl_id" options="{'no_create':1}" invisible="applied_on != '1_product'" required="applied_on == '1_product'"/>
+                            <field name="product_id" options="{'no_create':1}" invisible="applied_on != '0_product_variant'" required="applied_on == '0_product_variant'"/>
+                        </group>
+                        <group name="pricelist_rule_limits">
+                            <field name="min_quantity"/>
+                            <field name="date_start" string="Validity" widget="daterange" options="{'end_date_field': 'date_end'}"/>
+                            <field name="date_end" invisible="1"/>
+                        </group>
+                        <group name="pricelist_rule_related" groups="base.group_no_one">
+                            <field name="pricelist_id" invisible="1"/>
+                            <field name="currency_id" groups="base.group_multi_currency"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6391" model="ir.ui.view">
+            <field name="name">pos.config.kanban.view</field>
+            <field name="model">pos.config</field>
+            <field name="type">kanban</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="False"/>
+            <field name="arch" type="xml"><kanban create="false" class="o_kanban_dashboard o_pos_kanban">
+                <field name="current_user_id"/>
+                <field name="cash_control"/>
+                <field name="name"/>
+                <field name="current_session_id"/>
+                <field name="current_session_state"/>
+                <field name="last_session_closing_date"/>
+                <field name="pos_session_username"/>
+                <field name="pos_session_state"/>
+                <field name="pos_session_duration"/>
+                <field name="currency_id"/>
+                <field name="number_of_rescue_session"/>
+                <templates>
+                    <t t-name="kanban-menu">
+                        <div class="container dropdown-pos-config">
+                            <div class="row">
+                                <div class="col-6 o_kanban_card_manage_section o_kanban_manage_view w-100">
+                                    <h5 role="menuitem" class="o_kanban_card_manage_title">
+                                        <span>View</span>
+                                    </h5>
+                                    <div role="menuitem">
+                                        <a name="375" type="action">Orders</a>
+                                    </div>
+                                    <div role="menuitem">
+                                        <a name="374" type="action">Sessions</a>
+                                    </div>
+                                </div>
+                                <div class="col-6 o_kanban_card_manage_section o_kanban_manage_new">
+                                    <h5 role="menuitem" class="o_kanban_card_manage_title">
+                                        <span>Reporting</span>
+                                    </h5>
+                                    <div role="menuitem">
+                                        <a name="376" type="action">Orders</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div t-if="widget.editable" class="o_kanban_card_manage_settings row" groups="point_of_sale.group_pos_manager">
+                                <div role="menuitem" class="col-12">
+                                    <a name="action_pos_config_modal_edit" type="object">Edit</a>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                    <t t-name="kanban-box">
+                        <div>
+                            <div class="o_kanban_card_header flex-grow-inf">
+                                <div class="o_kanban_card_header_title mb16">
+                                    <div class="o_primary o_kanban_card_header_title_name">
+                                        <t t-esc="record.name.value"/>
+                                    </div>
+                                    <t t-if="!record.current_session_id.raw_value &amp;&amp; record.pos_session_username.value">
+                                        <div class="badge text-bg-info o_kanban_inline_block">Opened by <t t-esc="record.pos_session_username.value"/></div>
+                                    </t>
+                                    <t t-if="record.pos_session_state.raw_value == 'opening_control'">
+                                        <div class="badge text-bg-info o_kanban_inline_block">Opening Control</div>
+                                    </t>
+                                    <t t-if="record.pos_session_state.raw_value == 'closing_control'">
+                                        <div class="badge text-bg-info o_kanban_inline_block">Closing Control</div>
+                                    </t>
+                                    <t t-if="record.pos_session_state.raw_value == 'opened' and record.pos_session_duration.raw_value &gt; 1">
+                                        <div t-attf-class="badge bg-#{record.pos_session_duration.raw_value &gt; 3 and 'danger' or 'warning'} o_kanban_inline_block" title="The session has been opened for an unusually long period. Please consider closing.">
+                                             To Close
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+                            <div class="container o_kanban_card_content">
+                                <div class="row">
+                                    <div class="col-6 o_kanban_primary_left">
+                                        <button t-if="record.current_session_state.raw_value != 'closing_control'" class="btn btn-primary" name="open_ui" type="object">
+                                            <t t-if="record.current_session_state.raw_value === 'opened'">Continue Selling</t>
+                                            <t t-elif="!record.current_session_id.raw_value &amp;&amp; !record.pos_session_username.value">New Session</t>
+                                            <t t-elif="record.current_session_state.raw_value === 'opening_control'">Open Session</t>
+                                        </button>
+
+                                        <button t-else="" class="btn btn-secondary" name="open_existing_session_cb" type="object">Close</button>
+
+                                    </div>
+                                    <div class="col-6 o_kanban_primary_right">
+
+                                        <div t-if="record.last_session_closing_date.value" class="row">
+                                            <div class="col-6">
+                                                <span>Closing</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <span><t t-esc="record.last_session_closing_date.value"/></span>
+                                            </div>
+                                        </div>
+
+                                        <div t-if="record.last_session_closing_date.value" invisible="not cash_control" class="row">
+                                            <div class="col-6">
+                                                <span>Balance</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <span><field name="last_session_closing_cash" widget="monetary"/></span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <a t-if="record.number_of_rescue_session.value &gt; 0" class="oe_kanban_action oe_kanban_action_a col-12" name="open_opened_rescue_session_form" type="object">
+                                                <t t-esc="record.number_of_rescue_session.value"/> outstanding rescue session
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <field name="current_user_id" widget="many2one_avatar_user"/>
+                                </div>
+
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban></field>
+        </record>
+
+        <record id="view_6392" model="ir.ui.view">
+            <field name="name">Odoo Studio: pos.config.kanban.view customization</field>
+            <field name="model">pos.config</field>
+            <field name="inherit_id" ref="view_6391"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//kanban[1]/templates[1]/t[1]" position="replace"/>
+</data></field>
+        </record>
+
+        <record id="view_6491" model="ir.ui.view">
+            <field name="name">Odoo Studio: Marcas customization</field>
+            <field name="model">goodnews.supercategory</field>
+            <field name="inherit_id" ref="goodnews.goodnews_supercategory_tree"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//tree[1]/field[@name='name']" position="before">
+    <field name="id" optional="show"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6496" model="ir.ui.view">
+            <field name="name">GoodNews: vida útil abierto (form)</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_only_form_view"/>
+            <field name="priority" eval="170"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="False"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='x_studio_production']" position="after">
+    <field name="x_studio_vida_util_abierto"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6497" model="ir.ui.view">
+            <field name="name">GoodNews: vida útil abierto (list)</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_tree_view"/>
+            <field name="priority" eval="170"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="False"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='default_code']" position="after">
+    <field name="x_studio_vida_util_abierto" optional="hide"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6498" model="ir.ui.view">
+            <field name="name">GoodNews: vida útil abierto (search)</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_search_view"/>
+            <field name="priority" eval="170"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="False"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='categ_id']" position="after">
+    <field name="x_studio_vida_util_abierto"/>
+  </xpath>
+  <xpath expr="//filter[@name='filter_to_purchase']" position="after">
+    <separator/>
+    <filter string="With open shelf life" name="con_vida_util" domain="[('x_studio_vida_util_abierto', '&gt;', 0)]"/>
+    <filter string="Without open shelf life" name="sin_vida_util" domain="[('x_studio_vida_util_abierto', 'in', [0, False])]"/>
+  </xpath>
+  <xpath expr="//filter[@name='categ_id']" position="after">
+    <filter string="Open shelf life" name="group_vida_util" context="{'group_by': 'x_studio_vida_util_abierto'}"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6499" model="ir.ui.view">
+            <field name="name">GoodNews: KCAL (form)</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_only_form_view"/>
+            <field name="priority" eval="170"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="False"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='x_studio_allergy_traces']" position="after">
+    <field name="x_studio_kcal"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6500" model="ir.ui.view">
+            <field name="name">GoodNews: KCAL (list)</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_tree_view"/>
+            <field name="priority" eval="170"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="False"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='default_code']" position="after">
+    <field name="x_studio_kcal" optional="hide"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6501" model="ir.ui.view">
+            <field name="name">GoodNews: KCAL (search)</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_search_view"/>
+            <field name="priority" eval="170"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="False"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='categ_id']" position="after">
+    <field name="x_studio_kcal"/>
+  </xpath>
+  <xpath expr="//filter[@name='filter_to_purchase']" position="after">
+    <separator/>
+    <filter string="With KCAL" name="con_kcal" domain="[('x_studio_kcal', '&gt;', 0)]"/>
+    <filter string="Without KCAL" name="sin_kcal" domain="[('x_studio_kcal', 'in', [0, False])]"/>
+  </xpath>
+  <xpath expr="//filter[@name='categ_id']" position="after">
+    <filter string="KCAL" name="group_kcal" context="{'group_by': 'x_studio_kcal'}"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6521" model="ir.ui.view">
+            <field name="name">Default search view for ir.model(1462,)</field>
+            <field name="model">pos.combo</field>
+            <field name="type">search</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><search string="Product combo choices"><field name="name"/></search></field>
+        </record>
+
+        <record id="view_6522" model="ir.ui.view">
+            <field name="name">Odoo Studio: Default search view for ir.model(1462,) customization</field>
+            <field name="model">pos.combo</field>
+            <field name="inherit_id" ref="view_6521"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//search[1]/field[@name='name']" position="after">
+    <field name="combo_line_ids"/>
+  </xpath>
+</data></field>
+        </record>
+</odoo>

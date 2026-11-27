@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <!-- Automatización (activa en prod: True) -->
+        <record id="automation_4" model="base.automation">
+            <field name="name">Warehouse b2b</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="trigger">on_create_or_write</field>
+            <field name="active" eval="True"/>
+            <field name="trigger_field_ids" eval="[Command.set([ref('sale.field_sale_order__partner_id')])]"/>
+        </record>
+
+        <record id="action_server_1594" model="ir.actions.server">
+            <field name="name">Ejecutar el código Python</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="state">code</field>
+            <field name="usage">base_automation</field>
+            <field name="code"><![CDATA[# =====================================================================
+# Customer set or changed -> use the customer's B2B warehouse.
+# Automation "Warehouse b2b" (sale.order, on partner_id change).
+# =====================================================================
+
+for order in records:
+    warehouse = order.partner_id.x_studio_warehouse_id
+    if not warehouse:
+        continue
+    if warehouse.company_id != order.company_id:
+        continue        # a warehouse of another company would block the save
+    if order.warehouse_id != warehouse:
+        order.write({'warehouse_id': warehouse.id})]]></field>
+            <field name="base_automation_id" ref="automation_4"/>
+        </record>
+
+        <record id="action_server_1595" model="ir.actions.server">
+            <field name="name">Recurring purchases</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# =====================================================================
+# Recurring B2B orders: ONE daily cron for every recurrence.
+# Replaces crons 150 / 155 / 156 / 157. A template is copied when its
+# period has elapsed since its last copy (or since its own order date).
+# =====================================================================
+
+# ---- Constants -------------------------------------------------------
+LOCAL_TZ = 'Europe/Madrid'
+
+# code  : stable key written in "Documento origen" - never rename once in use
+# start : first day this cron may generate (= next run of the old cron)
+RECURRENCES = [
+    {'code': 'MENSUAL', 'tag_id': 1, 'months': 1, 'days': 0,  'start': datetime.date(2026, 10, 27), 'confirm_and_invoice': False},
+    {'code': '90D',     'tag_id': 2, 'months': 0, 'days': 90, 'start': datetime.date(2026, 12, 26), 'confirm_and_invoice': False},
+    {'code': '15D',     'tag_id': 4, 'months': 0, 'days': 15, 'start': datetime.date(2026, 10, 27), 'confirm_and_invoice': False},
+    {'code': 'RENTING', 'tag_id': 3, 'months': 1, 'days': 0,  'start': datetime.date(2026, 10, 27), 'confirm_and_invoice': True},
+]
+
+TEMPLATE_STATE = 'sale'
+SAVEPOINT = 'recurring_order'
+NOTE_SUBTYPE = 'mail.mt_note'
+
+# ---- Setup -----------------------------------------------------------
+SaleOrder = env['sale.order']
+Tag = env['crm.tag']
+local_tz = timezone(LOCAL_TZ)
+utc_tz = timezone('UTC')
+today = datetime.datetime.now(local_tz).date()
+
+# Every recurrence tag: none is ever copied to a duplicate
+recurrence_tag_ids = []
+for recurrence in RECURRENCES:
+    recurrence_tag_ids.append(recurrence['tag_id'])
+all_recurrence_tags = Tag.browse(recurrence_tag_ids).exists()
+
+created = []
+not_invoiced = []
+failed = []
+
+# ---- Main loop -------------------------------------------------------
+for recurrence in RECURRENCES:
+    code = recurrence['code']
+    tag = Tag.browse(recurrence['tag_id']).exists()
+    if not tag:
+        log('Recurring orders %s: crm.tag %s not found, skipped' % (code, recurrence['tag_id']), level='error')
+        continue
+
+    period = dateutil.relativedelta.relativedelta(months=recurrence['months'], days=recurrence['days'])
+
+    templates = SaleOrder.search([
+        ('tag_ids', 'in', tag.ids),
+        ('state', '=', TEMPLATE_STATE),
+    ])
+
+    for template in templates:
+        origin = '%s · %s' % (template.name, code)
+
+        # Due date: one period after the last copy (or the template itself), never before start
+        last_copy = SaleOrder.search([('origin', '=', origin)], order='create_date desc', limit=1)
+        anchor_utc = last_copy.create_date if last_copy else template.date_order
+        anchor = utc_tz.localize(anchor_utc).astimezone(local_tz).date()
+        due_date = max(anchor + period, recurrence['start'])
+        if today < due_date:
+            continue
+
+        # One savepoint per copy: a failing order is rolled back alone, the rest are kept
+        env.cr.execute('SAVEPOINT ' + SAVEPOINT)
+        try:
+            # Work in the template's company (journal, taxes, sequence)
+            source = template.with_company(template.company_id)
+
+            # copy() already resets state to draft; drop every recurrence tag in the same call
+            new_order = source.copy(default={
+                'origin': origin,
+                'tag_ids': [Command.set((template.tag_ids - all_recurrence_tags).ids)],
+            })
+
+            summary = 'Pedido generado automáticamente como duplicado de %s (%s).' % (template.name, tag.name)
+
+            if recurrence['confirm_and_invoice']:
+                new_order.action_confirm()
+                invoices = new_order.with_context(raise_if_nothing_to_invoice=False)._create_invoices()
+                if invoices:
+                    summary += ' Confirmado y con %s factura(s) en borrador.' % len(invoices)
+                    for invoice in invoices:
+                        invoice.message_post(
+                            body='Factura generada automáticamente para %s (%s).' % (new_order.name, tag.name),
+                            subtype_xmlid=NOTE_SUBTYPE,
+                        )
+                else:
+                    summary += ' Confirmado, pero sin líneas facturables: no se ha creado factura.'
+                    not_invoiced.append(new_order.name)
+
+            new_order.message_post(body=summary, subtype_xmlid=NOTE_SUBTYPE)
+
+            env.flush_all()     # surface DB errors inside the savepoint, not after it
+            env.cr.execute('RELEASE SAVEPOINT ' + SAVEPOINT)
+            created.append('%s -> %s' % (origin, new_order.name))
+        except Exception as error:
+            env.cr.execute('ROLLBACK TO SAVEPOINT ' + SAVEPOINT)
+            env.invalidate_all()
+            failed.append('%s: %s' % (origin, error))
+
+# ---- Report (only on days with activity) ------------------------------
+if created:
+    log('Recurring orders: %s created -> %s' % (len(created), ', '.join(created)), level='info')
+if not_invoiced:
+    log('Recurring orders: confirmed without invoice -> %s' % ', '.join(not_invoiced), level='warning')
+if failed:
+    log('Recurring orders: %s failed -> %s' % (len(failed), ' | '.join(failed)), level='error')]]></field>
+        </record>
+
+        <record id="action_server_1616" model="ir.actions.server">
+            <field name="name">Recurring purchases 90 days</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# Available variables:
+#  - env: environment on which the action is triggered
+#  - model: model of the record on which the action is triggered; is a void recordset
+#  - record: record on which the action is triggered; may be void
+#  - records: recordset of all records on which the action is triggered in multi-mode; may be void
+#  - time, datetime, dateutil, timezone: useful Python libraries
+#  - float_compare: utility function to compare floats based on specific precision
+#  - log: log(message, level='info'): logging function to record debug information in ir.logging table
+#  - _logger: _logger.info(message): logger to emit messages in server logs
+#  - UserError: exception class for raising user-facing warning messages
+#  - Command: x2many commands namespace
+# To return an action, assign: action = {...}
+
+# Buscar pedidos de venta con la etiqueta ID=2 y estado 'draft'
+orders = env['sale.order'].search([
+    ('tag_ids', 'in', [2]),
+    ('state', '=', 'sale')
+])
+
+for order in orders:
+    # Duplicar el pedido (Odoo generará un nuevo name automáticamente)
+    new_order = order.copy()
+    
+    # Asegurar que el nuevo pedido quede como Presupuesto y quitar etiqueta
+    new_order.write({
+        'state': 'draft',
+        'tag_ids': [(3, 2)]
+    })
+    
+    # Agregar mensaje en el chatter del duplicado
+    new_order.message_post(body=f"Este pedido fue generado automáticamente como duplicado de {order.name}.")
+
+
+
+
+
+
+
+]]></field>
+        </record>
+
+        <record id="action_server_1617" model="ir.actions.server">
+            <field name="name">Recurring purchases 15 days</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# Available variables:
+#  - env: environment on which the action is triggered
+#  - model: model of the record on which the action is triggered; is a void recordset
+#  - record: record on which the action is triggered; may be void
+#  - records: recordset of all records on which the action is triggered in multi-mode; may be void
+#  - time, datetime, dateutil, timezone: useful Python libraries
+#  - float_compare: utility function to compare floats based on specific precision
+#  - log: log(message, level='info'): logging function to record debug information in ir.logging table
+#  - _logger: _logger.info(message): logger to emit messages in server logs
+#  - UserError: exception class for raising user-facing warning messages
+#  - Command: x2many commands namespace
+# To return an action, assign: action = {...}
+
+# Buscar pedidos de venta con la etiqueta ID=2 y estado 'draft'
+orders = env['sale.order'].search([
+    ('tag_ids', 'in', [4]),
+    ('state', '=', 'sale')
+])
+
+for order in orders:
+    # Duplicar el pedido (Odoo generará un nuevo name automáticamente)
+    new_order = order.copy()
+    
+    # Asegurar que el nuevo pedido quede como Presupuesto y quitar etiqueta
+    new_order.write({
+        'state': 'draft',
+        'tag_ids': [(3, 4)]
+    })
+    
+    # Agregar mensaje en el chatter del duplicado
+    new_order.message_post(body=f"Este pedido fue generado automáticamente como duplicado de {order.name}.")
+
+
+
+
+
+
+
+]]></field>
+        </record>
+
+        <record id="action_server_1618" model="ir.actions.server">
+            <field name="name">Recurring sales confirmed sales, draft invoice</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# Available variables:
+#  - env: environment on which the action is triggered
+#  - model: model of the record on which the action is triggered; is a void recordset
+#  - record: record on which the action is triggered; may be void
+#  - records: recordset of all records on which the action is triggered in multi-mode; may be void
+#  - time, datetime, dateutil, timezone: useful Python libraries
+#  - float_compare: utility function to compare floats based on specific precision
+#  - log: log(message, level='info'): logging function to record debug information in ir.logging table
+#  - _logger: _logger.info(message): logger to emit messages in server logs
+#  - UserError: exception class for raising user-facing warning messages
+#  - Command: x2many commands namespace
+# To return an action, assign: action = {...}
+# Buscar pedidos de venta con la etiqueta ID=3 y estado 'sale'
+orders = env['sale.order'].search([
+    ('tag_ids', 'in', [3]),
+    ('state', '=', 'sale')
+])
+
+for order in orders:
+    # Duplicar el pedido
+    new_order = order.copy()
+    
+    # Ajustar campos en el duplicado
+    new_order.write({
+        'state': 'draft',      # aseguramos que esté en borrador
+        'tag_ids': [(3, 3)]    # quitar etiqueta ID=3
+    })
+    
+    # Confirmar el pedido duplicado
+    new_order.action_confirm()
+    
+    # Crear factura (en borrador)
+    invoices = new_order._create_invoices()
+    
+    # Agregar mensaje a la factura
+    if invoices:
+        for inv in invoices:
+            inv.message_post(
+                body=f"Esta factura fue generada automáticamente como renting de {order.name}."
+            )
+    
+    # Agregar mensaje en el chatter del pedido duplicado
+    new_order.message_post(
+        body=f"Este pedido fue generado automáticamente como renting de {order.name}, confirmado y con factura generada."
+    )
+
+
+
+]]></field>
+        </record>
+
+        <record id="action_server_1768" model="ir.actions.server">
+            <field name="name">ES: Asignar almacén B2B</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="state">object_write</field>
+            <field name="binding_model_id" ref="base.model_res_partner"/>
+            <field name="crud_model_id" ref="base.model_res_partner"/>
+            <field name="update_field_id" ref="gn_otros_base.field_res_partner__x_studio_warehouse_id"/>
+            <field name="update_related_model_id" ref="stock.model_stock_warehouse"/>
+            <field name="update_path">x_studio_warehouse_id</field>
+            <field name="update_m2m_operation">add</field>
+            <field name="update_boolean_value">true</field>
+            <field name="evaluation_type">value</field>
+            <field name="value">58</field>
+            <field name="binding_view_types">list,form</field>
+        </record>
+
+        <record id="action_server_1769" model="ir.actions.server">
+            <field name="name">ES: Asignar posicion fiscal B2B</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="state">object_write</field>
+            <field name="binding_model_id" ref="base.model_res_partner"/>
+            <field name="crud_model_id" ref="base.model_res_partner"/>
+            <field name="update_field_id" ref="account.field_res_partner__property_account_position_id"/>
+            <field name="update_related_model_id" ref="account.model_account_fiscal_position"/>
+            <field name="update_path">property_account_position_id</field>
+            <field name="update_m2m_operation">add</field>
+            <field name="update_boolean_value">true</field>
+            <field name="evaluation_type">value</field>
+            <field name="value">413</field>
+            <field name="binding_view_types">list,form</field>
+        </record>
+
+        <record id="action_server_1775" model="ir.actions.server">
+            <field name="name">Limpieza res.partner posición fiscal</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="state">object_write</field>
+            <field name="binding_model_id" ref="base.model_res_partner"/>
+            <field name="crud_model_id" ref="base.model_res_partner"/>
+            <field name="update_field_id" ref="account.field_res_partner__property_account_position_id"/>
+            <field name="update_related_model_id" ref="account.model_account_fiscal_position"/>
+            <field name="update_path">property_account_position_id</field>
+            <field name="update_m2m_operation">add</field>
+            <field name="update_boolean_value">true</field>
+            <field name="evaluation_type">value</field>
+            <field name="binding_view_types">list,form</field>
+        </record>
+</odoo>

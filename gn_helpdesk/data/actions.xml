@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <!-- Automatización (activa en prod: True) -->
+        <record id="automation_13" model="base.automation">
+            <field name="name">Colores tickets</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="trigger">on_create_or_write</field>
+            <field name="active" eval="True"/>
+            <field name="filter_pre_domain">[]</field>
+            <field name="filter_domain">[]</field>
+            <field name="trigger_field_ids" eval="[Command.set([ref('gn_helpdesk_base.field_helpdesk_ticket__x_studio_priority')])]"/>
+        </record>
+
+        <!-- Automatización (activa en prod: False) -->
+        <record id="automation_15" model="base.automation">
+            <field name="name">Correos de seguimiento alertas crítica</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="trigger">on_create_or_write</field>
+            <field name="active" eval="False"/>
+            <field name="filter_pre_domain">["&amp;", "&amp;", ("x_studio_priority", "=", "3"), ("x_studio_city", "!=", False), ("partner_email", "=", False)]</field>
+            <field name="filter_domain">["&amp;", "&amp;", ("x_studio_priority", "=", "3"), ("x_studio_city", "!=", False), ("partner_email", "=", False)]</field>
+            <field name="trigger_field_ids" eval="[Command.set([ref('gn_helpdesk_base.field_helpdesk_ticket__x_studio_city')])]"/>
+        </record>
+
+        <!-- Automatización (activa en prod: True) -->
+        <record id="automation_16" model="base.automation">
+            <field name="name">Añadir seguidores tickets de asistencia</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="trigger">on_create_or_write</field>
+            <field name="active" eval="True"/>
+            <field name="filter_domain">[("stage_id", "not in", [5, 4, 2])]</field>
+            <field name="trigger_field_ids" eval="[Command.set([ref('gn_helpdesk_base.field_helpdesk_ticket__x_studio_responsable'), ref('gn_helpdesk_base.field_helpdesk_ticket__x_studio_supplier')])]"/>
+        </record>
+
+        <!-- Automatización (activa en prod: True) -->
+        <record id="automation_20" model="base.automation">
+            <field name="name">Propagar ticket en factura</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="trigger">on_create_or_write</field>
+            <field name="active" eval="True"/>
+            <field name="trigger_field_ids" eval="[Command.set([ref('gn_helpdesk_base.field_helpdesk_ticket__x_studio_invoice')])]"/>
+        </record>
+
+        <!-- Automatización (activa en prod: True) -->
+        <record id="automation_23" model="base.automation">
+            <field name="name">Reabrir tickets con mensaje entrante</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="trigger">on_message_received</field>
+            <field name="active" eval="True"/>
+            <field name="filter_pre_domain">["&amp;", ("stage_id", "not in", [4, 5]), ("kanban_state", "!=", "blocked")]</field>
+            <field name="filter_domain">["&amp;", ("stage_id", "not in", [4, 5]), ("kanban_state", "!=", "blocked")]</field>
+        </record>
+
+        <!-- Automatización (activa en prod: True) -->
+        <record id="automation_24" model="base.automation">
+            <field name="name">Cerrar tickets con mensaje salida</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="trigger">on_message_sent</field>
+            <field name="active" eval="True"/>
+            <field name="filter_pre_domain">["&amp;", ("stage_id", "not in", [5, 4]), ("kanban_state", "=", "blocked")]
+</field>
+            <field name="filter_domain">["&amp;", ("stage_id", "not in", [5, 4]), ("kanban_state", "=", "blocked")]
+</field>
+        </record>
+
+        <!-- Automatización (activa en prod: False) -->
+        <record id="automation_26" model="base.automation">
+            <field name="name">Creacion de mantenimientos desde buddy</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="trigger">on_create_or_write</field>
+            <field name="active" eval="False"/>
+            <field name="filter_pre_domain">[]</field>
+            <field name="filter_domain">[
+    ('x_studio_intervention_date', '!=', False),
+    ('x_studio_maintenance_request_id', '=', False)
+]</field>
+            <field name="trigger_field_ids" eval="[Command.set([ref('gn_helpdesk_base.field_helpdesk_ticket__x_studio_intervention_date')])]"/>
+        </record>
+
+        <record id="action_server_1767" model="ir.actions.server">
+            <field name="name">Actualizar Índice de Colores</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="state">code</field>
+            <field name="usage">base_automation</field>
+            <field name="code"><![CDATA[# Acción automatizada: sincronizar índice de color con criticidad
+# Modelo: helpdesk.ticket
+# Disparador: Al crear y actualizar (campo observado: x_studio_priority)
+
+PRIORITY_TO_COLOR = {
+    '3': 1,    # Crítica     -> Rojo
+    '2': 3,    # Alta        -> Naranja
+    '1': 10,   # Baja        -> Verde
+    '0': 4,    # No asignada -> Azul claro
+}
+
+for record in records:
+    new_color = PRIORITY_TO_COLOR.get(record.x_studio_priority, 0)
+    if record.color != new_color:
+        record.write({'color': new_color})]]></field>
+            <field name="base_automation_id" ref="automation_13"/>
+        </record>
+
+        <record id="action_server_1797" model="ir.actions.server">
+            <field name="name">Ejecutar código</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="state">code</field>
+            <field name="usage">base_automation</field>
+            <field name="code"><![CDATA[# =====================================================================
+# helpdesk.ticket — Auto-suscripción de seguidores (responsable + proveedor)
+# + avisos al manager cuando el responsable no se puede notificar.
+#
+#  - Responsable (hr.employee): partner por usuario vinculado
+#    (user_id.partner_id) y, si NO tiene usuario, por el contacto de
+#    trabajo (work_contact_id). Se suscribe como seguidor.
+#  - Proveedor (res.partner): se suscribe como seguidor.
+#  - Aviso WARN_EMAIL: responsable sin work_email.
+#  - Aviso WARN_NOPARTNER: responsable sin usuario NI contacto de trabajo
+#    (no se puede suscribir); pide al manager rellenarlo.
+#  Ambos avisos son idempotentes por empleado mediante marcador (EMP:<id>).
+#
+# Producción: silencioso en éxito, registra solo errores.
+# =====================================================================
+# --- Constantes ---
+NOTE_SUBTYPE   = 'mail.mt_note'          # Nota interna, sin email
+SAVEPOINT_NAME = 'subscribe_followers'   # Aísla fallos por registro
+
+WARN_EMAIL = ("The responsible user %s doesn't have a Work email. Please add the "
+              "email to the employee and then set the responsible again. (EMP:%s)")
+
+WARN_NOPARTNER = ("The responsible %s can't be added as a follower because the "
+                  "employee has no linked user and no Work Contact set. Please "
+                  "fill in the Work Contact (or link a user) on the employee, "
+                  "then set the responsible again. (EMP-NC:%s)")
+
+
+for record in records:
+    # 1) Partners objetivo (sin duplicar).
+    target_ids = []
+
+    employee = record.x_studio_responsable
+    if employee:
+        marker_email = "(EMP:%s)" % employee.id
+        marker_nc    = "(EMP-NC:%s)" % employee.id
+        # Cache de los cuerpos de mensaje: se reutiliza para ambos avisos.
+        bodies = record.message_ids.mapped("body")
+
+        # 1a) Aviso si el responsable no tiene correo de trabajo.
+        if not employee.work_email:
+            already_warned = False
+            for body in bodies:
+                if body and marker_email in body:
+                    already_warned = True
+                    break
+            if not already_warned:
+                record.message_post(
+                    body=WARN_EMAIL % (employee.display_name, employee.id),
+                    subtype_xmlid=NOTE_SUBTYPE,
+                )
+
+        # 1b) Responsable -> partner. Preferimos el del usuario vinculado;
+        #     si el empleado NO tiene usuario, usamos el contacto de trabajo.
+        resp_partner = employee.user_id.partner_id
+        if not resp_partner:
+            resp_partner = employee.work_contact_id
+
+        if resp_partner:
+            if resp_partner.id not in target_ids:
+                target_ids.append(resp_partner.id)
+        else:
+            # 1c) Sin usuario NI contacto de trabajo: no se puede suscribir.
+            #     Avisamos al manager (idempotente por empleado).
+            already_warned_nc = False
+            for body in bodies:
+                if body and marker_nc in body:
+                    already_warned_nc = True
+                    break
+            if not already_warned_nc:
+                record.message_post(
+                    body=WARN_NOPARTNER % (employee.display_name, employee.id),
+                    subtype_xmlid=NOTE_SUBTYPE,
+                )
+
+    # Proveedor (res.partner) directo.
+    supplier = record.x_studio_supplier
+    if supplier and supplier.id not in target_ids:
+        target_ids.append(supplier.id)
+
+    if not target_ids:
+        continue
+
+    # 2) Guard de idempotencia: descartar los que ya son seguidores.
+    current_ids = record.message_partner_ids.ids
+    to_add = []
+    for pid in target_ids:
+        if pid not in current_ids:
+            to_add.append(pid)
+    if not to_add:
+        continue
+
+    # 3) Suscripción aislada por savepoint (constraint único de mail.followers).
+    env.cr.execute('SAVEPOINT %s' % SAVEPOINT_NAME)
+    try:
+        record.message_subscribe(partner_ids=to_add)
+        env.cr.execute('RELEASE SAVEPOINT %s' % SAVEPOINT_NAME)
+    except Exception as e:
+        env.cr.execute('ROLLBACK TO SAVEPOINT %s' % SAVEPOINT_NAME)
+        record.message_post(
+            body="Error al suscribir seguidores %s: %s" % (to_add, e),
+            subtype_xmlid=NOTE_SUBTYPE,
+        )]]></field>
+            <field name="base_automation_id" ref="automation_16"/>
+        </record>
+
+        <record id="action_server_1805" model="ir.actions.server">
+            <field name="name">Ejecutar código</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="state">code</field>
+            <field name="usage">base_automation</field>
+            <field name="code"><![CDATA[# Acción única para alertas críticas de helpdesk.
+
+# Mapping: valor de x_studio_city -> (user_id manager, template_id)
+CITY_CONFIG = {
+    '1': (151, 112),  # Barcelona
+    '2': (95, 113),  # Madrid    — TODO: poner user_id
+    '3': (152, 114),  # Paris     — TODO: poner user_id
+    '5': (144, 115),  # Amsterdam — TODO: poner user_id
+}
+
+MANAGER_KEYWORD = 'manager'
+
+
+def _find_manager_email(user):
+    """Devuelve el email del child contact con 'manager' en el nombre, o False."""
+    if not user.partner_id:
+        return False
+    contact = user.partner_id.child_ids.filtered(
+        lambda c: c.email and c.name and MANAGER_KEYWORD in c.name.lower()
+    )[:1]
+    return contact.email if contact else False
+
+
+for record in records:
+    city_value = record.x_studio_city
+
+    # 1. Ciudad sin configurar
+    config = CITY_CONFIG.get(city_value)
+    if not config:
+        record.message_post(
+            body="Error: ciudad '%s' sin configuración en CITY_CONFIG." % city_value,
+            subtype_xmlid='mail.mt_note',
+        )
+        continue
+
+    user_id, template_id = config
+
+    # 2. Usuario manager
+    user = env['res.users'].browse(user_id).exists()
+    if not user:
+        record.message_post(
+            body="Error: user_id %s configurado para ciudad '%s' no existe." % (user_id, city_value),
+            subtype_xmlid='mail.mt_note',
+        )
+        continue
+
+    # 3. Email del contacto "manager" bajo el partner del user
+    manager_email = _find_manager_email(user)
+    if not manager_email:
+        record.message_post(
+            body="Aviso: no se encontró contacto 'manager' bajo %s. Correo no se enviará." % user.display_name,
+            subtype_xmlid='mail.mt_note',
+        )
+
+    # 4. Plantilla
+    template = env['mail.template'].browse(template_id).exists()
+    if not template:
+        record.message_post(
+            body="Error: plantilla con ID %s no encontrada (ciudad '%s')." % (template_id, city_value),
+            subtype_xmlid='mail.mt_note',
+        )
+        continue
+
+    # 5. Escribir asignación — change guard
+    new_values = {}
+    if record.user_id.id != user.id:
+        new_values['user_id'] = user.id
+    if record.partner_email != (manager_email or False):
+        new_values['partner_email'] = manager_email or False
+    if new_values:
+        record.write(new_values)
+
+    # 6. Enviar correo — solo si hay destinatario válido
+    if not manager_email:
+        continue
+
+    try:
+        template.send_mail(record.id, force_send=False)
+    except Exception as e:
+        record.message_post(
+            body="Error al enviar plantilla ID %s: %s" % (template_id, e),
+            subtype_xmlid='mail.mt_note',
+        )
+]]></field>
+            <field name="base_automation_id" ref="automation_15"/>
+        </record>
+
+        <record id="action_server_1807" model="ir.actions.server">
+            <field name="name">Ejecutar código</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="state">code</field>
+            <field name="usage">base_automation</field>
+            <field name="code"><![CDATA[for ticket in records:
+    if ticket.x_studio_invoice:
+        ticket.x_studio_invoice.write({
+            'x_studio_tickets': [(4, ticket.id)]
+        })
+
+]]></field>
+            <field name="base_automation_id" ref="automation_20"/>
+        </record>
+
+        <record id="action_server_1817" model="ir.actions.server">
+            <field name="name">Ejecutar código</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="state">object_write</field>
+            <field name="usage">base_automation</field>
+            <field name="crud_model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="update_field_id" ref="helpdesk.field_helpdesk_ticket__kanban_state"/>
+            <field name="update_path">kanban_state</field>
+            <field name="update_m2m_operation">add</field>
+            <field name="update_boolean_value">true</field>
+            <field name="evaluation_type">value</field>
+            <field name="value">blocked</field>
+            <field name="selection_value" ref="helpdesk.selection__helpdesk_ticket__kanban_state__blocked"/>
+            <field name="base_automation_id" ref="automation_23"/>
+        </record>
+
+        <record id="action_server_1818" model="ir.actions.server">
+            <field name="name">Ejecutar código</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="state">object_write</field>
+            <field name="usage">base_automation</field>
+            <field name="crud_model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="update_field_id" ref="helpdesk.field_helpdesk_ticket__kanban_state"/>
+            <field name="update_path">kanban_state</field>
+            <field name="update_m2m_operation">add</field>
+            <field name="update_boolean_value">true</field>
+            <field name="evaluation_type">value</field>
+            <field name="value">normal</field>
+            <field name="selection_value" ref="helpdesk.selection__helpdesk_ticket__kanban_state__normal"/>
+            <field name="base_automation_id" ref="automation_24"/>
+        </record>
+
+        <record id="action_server_1846" model="ir.actions.server">
+            <field name="name">Ejecutar código</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="state">code</field>
+            <field name="usage">base_automation</field>
+            <field name="code"><![CDATA[if record.x_studio_intervention_date and not record.x_studio_maintenance_request_id:
+
+    tag_names = ", ".join(record.tag_ids.mapped("name")) if record.tag_ids else "Sin tags"
+    priority = record.x_studio_priority or "Sin prioridad"
+
+    maintenance_name = "%s - %s" % (tag_names, priority)
+
+    responsible_user = False
+
+    if record.x_studio_pdv:
+        responsible_user = env["res.users"].sudo().search([
+            ("pos_config_ids", "in", [record.x_studio_pdv.id])
+        ], limit=1)
+
+    maintenance_request = env["maintenance.request"].sudo().create({
+        "name": maintenance_name,
+        "schedule_date": record.x_studio_intervention_date,
+
+        # Notas del mantenimiento
+        "description": record.x_studio_incidencia_detectada or "",
+
+        # Ticket de origen
+        "x_studio_ticket_origin": record.id,
+
+        # PDV / POS Config
+        "x_studio_pdv": record.x_studio_pdv.id if record.x_studio_pdv else False,
+
+        # Responsable de mantenimiento
+        "user_id": responsible_user.id if responsible_user else False,
+    })
+
+    record.sudo().write({
+        "x_studio_maintenance_request_id": [(4, maintenance_request.id)]
+    })
+
+]]></field>
+            <field name="base_automation_id" ref="automation_26"/>
+        </record>
+
+        <record id="action_window_1795" model="ir.actions.act_window">
+            <field name="name">Enviar correo electrónico (Incidencias Barcelona (crítica))</field>
+            <field name="res_model">mail.compose.message</field>
+            <field name="view_mode">form,tree</field>
+            <field name="context">{'default_composition_mode': 'mass_mail', 'default_model': 'helpdesk.ticket', 'default_template_id': 112}</field>
+            <field name="binding_view_types">list,form</field>
+            <field name="target">new</field>
+            <field name="binding_model_id" ref="helpdesk.model_helpdesk_ticket"/>
+        </record>
+</odoo>

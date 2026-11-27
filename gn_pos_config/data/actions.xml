@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="action_url_1878" model="ir.actions.act_url">
+            <field name="name">Tools</field>
+            <field name="url">https://goodnews.tools/</field>
+            <field name="target">new</field>
+        </record>
+</odoo>

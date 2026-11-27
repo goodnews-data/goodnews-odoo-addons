@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="action_window_1848" model="ir.actions.act_window">
+            <field name="name">App Tour</field>
+            <field name="res_model">x_app_tour</field>
+            <field name="view_mode">kanban,form</field>
+            <field name="binding_view_types">list,form</field>
+            <field name="help" type="html"><p class="o_view_nocontent_smiling_face">
+                    Esta es tu nueva acción.
+                </p>
+                <p>Por defecto, contiene una lista y una vista de formulario y posiblemente
+                    otros tipos de vista dependiendo de las opciones que hayas elegido para tu modelo.
+                </p>
+                <p>
+                    Puede empezar a personalizar estas pantallas haciendo clic en el icono de Studio en la
+                    esquina superior derecha (también puede personalizar este mensaje de ayuda allí).
+                </p>
+            </field>
+        </record>
+
+        <record id="action_window_1849" model="ir.actions.act_window">
+            <field name="name">Tour step</field>
+            <field name="res_model">x_tour_step</field>
+            <field name="view_mode">tree,form</field>
+            <field name="binding_view_types">list,form</field>
+            <field name="help" type="html"><p class="o_view_nocontent_smiling_face">
+                    Esta es tu nueva acción.
+                </p>
+                <p>Por defecto, contiene una lista y una vista de formulario y posiblemente
+                    otros tipos de vista dependiendo de las opciones que hayas elegido para tu modelo.
+                </p>
+                <p>
+                    Puede empezar a personalizar estas pantallas haciendo clic en el icono de Studio en la
+                    esquina superior derecha (también puede personalizar este mensaje de ayuda allí).
+                </p>
+            </field>
+        </record>
+</odoo>

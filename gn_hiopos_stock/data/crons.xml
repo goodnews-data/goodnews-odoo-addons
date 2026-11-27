@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Se instala APAGADA. En prod: apagada, cada 2 minutes -->
+        <record id="cron_197" model="ir.cron">
+            <field name="name">hiopos_daytime_stock_slices</field>
+            <field name="model_id" ref="point_of_sale.model_pos_session"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ==========================================================================
+# HioPoS -> Odoo | Gradual POS stock update during the day
+# --------------------------------------------------------------------------
+# Model     : pos.session
+# Type      : Scheduled Action (ir.cron)
+#             Ajustes > Tecnico > Automatizacion > Acciones planificadas
+# Interval  : 10 Minutes | Priority: 20 | Repetir perdidos (doall): OFF
+# User      : OdooBot
+# Odoo      : 17.0
+# Version   : 17.0.1.0.0
+# Sandbox   : safe_eval compliant. No import / def / with / lambda /
+#             comprehensions / getattr / attribute assignment.
+# --------------------------------------------------------------------------
+# PURPOSE
+#   The HioPoS fetch cron imports a large batch of orders every 25 minutes on
+#   a fixed schedule that cannot be changed. With the company set to update
+#   stock "at closing", no picking is created per order, so the entire stock
+#   movement of the day lands in a single session close.
+#
+#   This action performs that closing work in bounded slices during the day.
+#   Each run it takes up to MAX_ORDERS_PER_RUN orders from the open sessions
+#   in scope, groups their lines by destination location, and calls the SAME
+#   standard helper the session close uses:
+#       stock.picking._create_picking_from_pos_order_lines(dest, lines, type)
+#   which creates the aggregated picking and validates it. Recipe components
+#   are exploded by that helper, so combo products resolve correctly.
+#
+#   Processed orders are then stamped with shipping_date, because
+#   pos_session._create_picking_at_end_of_session() skips any order with one:
+#       if order.company_id.anglo_saxon_accounting and order.is_invoiced
+#          or order.shipping_date:
+#           continue
+#   That stamp is the entire anti duplication mechanism. Do not remove it.
+# --------------------------------------------------------------------------
+# KNOWN RISK (accepted, not mitigated here)
+#   The aggregated picking groups several orders, so it cannot carry
+#   pos_order_id, and pos.order.picking_ids stays empty. The guard
+#   "if self.picking_ids: return" in _create_order_picking therefore does not
+#   protect these orders. If one is invoiced after the fact,
+#   action_pos_order_invoice() reaches "if self.shipping_date:" and launches
+#   stock rules, DUPLICATING the movement. Orders with to_invoice already set
+#   are excluded up front; the exposure is only manual post hoc invoicing of
+#   a POS ticket, which must be avoided on the configs in scope.
+#
+# KNOWN LIMITATION
+#   A destination group that always fails is rebuilt identically on every run
+#   and blocks its queue. The failing order names are logged for that reason.
+#   If it happens, fix the underlying record; there is no automatic split.
+# --------------------------------------------------------------------------
+# DEPLOYMENT CHECKLIST
+#   [ ] POS_CONFIG_IDS filled with PRODUCTION ids (test ids are different)
+#   [ ] FETCH_CRON_ID filled with the ir.cron id of "HioPoS: Fetch Orders"
+#   [ ] Verified res.company.point_of_sale_update_stock_quantities = 'closing'
+#   [ ] Verified a session close produces NO second picking for stamped orders
+#   [ ] Dry run in production, log inspected
+#   [ ] MAX_ORDERS_PER_RUN ramped 10 -> 50 -> target, watching the log
+# ==========================================================================
+
+
+# -------------------- BLOQUE 0: CONSTANTES --------------------------------
+# Dry run guard. Keep False for the first production run: the ids below are
+# environment specific and running blind with the wrong ones moves stock.
+EXECUTE = True
+
+# POS configs in scope. REQUIRED: the action refuses to run when empty, so a
+# misconfiguration can never sweep every point of sale in the database.
+# A bare int is accepted for the single POS case: [73] and 73 both work.
+POS_CONFIG_IDS = [78]
+
+# Orders processed per run, across all sessions in scope.
+# This is the only real load control: a destination group cannot be
+# interrupted once the standard helper is called.
+MAX_ORDERS_PER_RUN = 50
+
+# Stop starting new groups once this many seconds have elapsed.
+TIME_BUDGET_SECONDS = 40
+
+# Ignore orders younger than this, so the import transaction settles first.
+MIN_AGE_MINUTES = 2
+
+# Only these session states are touched. 'closing_control' is excluded on
+# purpose: the close is already running and would race with this action.
+SESSION_STATES = ['opened']
+
+# Cron ids to yield to while they hold their row lock. Add EVERY cron that
+# writes the same pos.order / pos.session / stock.quant rows, otherwise their
+# concurrent writes surface as PostgreSQL 40001 serialization failures.
+# Known writers: "HioPoS: Fetch Orders" and "HioPoS: Check Cierre Z".
+# Empty list = no probe at all (and busy_cron below stays 0, not proof of
+# an idle system).
+PAUSE_WHILE_CRON_IDS = [182, 183]
+
+VERBOSE = True
+
+# True  = write to ir.logging only when something needs attention.
+# False = log every run, including clean ones. Flip to False while debugging.
+# A clean run leaves no log line, so traceability of what was moved lives in
+# the picking (origin = session name) and in FIELD_PICKING on each order.
+LOG_ONLY_ON_WARNING = True
+
+# Studio Many2one on pos.order pointing at stock.picking, written so each
+# order links to the aggregated picking that moved its stock. Set to '' to
+# disable. VERIFY the technical name in Studio: auto generated fields look
+# like x_studio_many2one_field_XXXXX, not like the label you gave them.
+# Refund note: an order with both sale and refund lines produces two
+# pickings; a Many2one can only hold one, so the sale picking wins.
+FIELD_PICKING = 'x_studio_stockpicking'
+
+
+# -------------------- BLOQUE 1: GUARD DE CONFIGURACION --------------------
+# Normalise to a list: a domain 'in' term requires one, and writing a bare
+# int here is the natural mistake when there is a single POS in scope.
+config_ids = POS_CONFIG_IDS
+if isinstance(config_ids, int):
+    config_ids = [config_ids]
+
+config_ok = True
+if not config_ids:
+    config_ok = False
+    log(
+        'HIOPOS DAY SLICE ABORTED: POS_CONFIG_IDS is empty. Fill it with the '
+        'production pos.config ids before enabling this action.',
+        level='warning',
+    )
+
+
+# -------------------- BLOQUE 2: PAUSA SI EL FETCH ESTA CORRIENDO ----------
+# Same mechanism Odoo uses to claim a cron job: try to lock its row. The
+# lock is always released via ROLLBACK TO SAVEPOINT, so this probe can never
+# block the cron it is checking.
+crons_busy = 0
+
+if config_ok:
+    for cron_id in PAUSE_WHILE_CRON_IDS:
+        env.cr.execute('SAVEPOINT hiopos_probe')
+        try:
+            env.cr.execute(
+                'SELECT id FROM ir_cron WHERE id = %s FOR NO KEY UPDATE NOWAIT',
+                (cron_id,),
+            )
+        except Exception:
+            crons_busy = crons_busy + 1
+        env.cr.execute('ROLLBACK TO SAVEPOINT hiopos_probe')
+        env.invalidate_all(flush=False)
+
+
+# -------------------- BLOQUE 3: SESIONES CANDIDATAS -----------------------
+t_start = datetime.datetime.utcnow()
+cutoff_str = (t_start - datetime.timedelta(minutes=MIN_AGE_MINUTES)).strftime(
+    '%Y-%m-%d %H:%M:%S'
+)
+today_str = t_start.strftime('%Y-%m-%d')
+
+Session = env['pos.session']
+Order = env['pos.order']
+Picking = env['stock.picking']
+
+# Fail soft if the Studio field was renamed or not created yet: the stock
+# work must not stop because a traceability field is missing.
+has_picking_field = False
+if FIELD_PICKING:
+    if FIELD_PICKING in Order._fields:
+        has_picking_field = True
+
+sessions = Session
+if config_ok:
+    if crons_busy < 1:
+        sessions = Session.search(
+            [('state', 'in', SESSION_STATES), ('config_id', 'in', config_ids)],
+            order='id asc',
+        )
+
+
+# -------------------- BLOQUE 4: PROCESO POR SESION ------------------------
+budget_left = MAX_ORDERS_PER_RUN
+count_orders = 0
+count_pickings = 0
+count_pending = 0
+count_fail = 0
+skipped_realtime = 0
+stopped_on_time = False
+# A 40001 leaves this transaction on a stale snapshot: retrying the same work
+# here fails again deterministically, so the whole run is abandoned and the
+# next scheduled run picks it up with a fresh snapshot.
+aborted_conflict = False
+plan_log = ''
+created_log = ''
+failed_log = ''
+last_error = ''
+
+for session in sessions:
+    if budget_left < 1:
+        break
+
+    if aborted_conflict:
+        break
+
+    elapsed = (datetime.datetime.utcnow() - t_start).total_seconds()
+    if elapsed > TIME_BUDGET_SECONDS:
+        stopped_on_time = True
+        break
+
+    # Hard guard: in real time mode the standard flow already created a
+    # picking per order, and slicing here would double count the stock.
+    if not session.update_stock_at_closing:
+        skipped_realtime = skipped_realtime + 1
+        continue
+
+    picking_type = session.config_id.picking_type_id
+    if not picking_type:
+        continue
+
+    # Same fallback the standard close uses when the type has no destination.
+    if picking_type.default_location_dest_id:
+        session_destination_id = picking_type.default_location_dest_id.id
+    else:
+        session_destination_id = env['stock.warehouse']._get_partner_locations()[0].id
+
+    # to_invoice orders are excluded: under anglo saxon accounting they build
+    # their own picking, and they are the post hoc invoicing exposure.
+    orders = Order.search(
+        [
+            ('session_id', '=', session.id),
+            ('state', 'not in', ['draft', 'cancel']),
+            ('shipping_date', '=', False),
+            ('to_invoice', '=', False),
+            ('date_order', '<=', cutoff_str),
+        ],
+        order='id asc',
+        limit=budget_left,
+    )
+    if not orders:
+        continue
+
+    # ---- Group lines and orders by destination location -------------------
+    lines_by_dest = {}
+    orders_by_dest = {}
+    for order in orders:
+        # property_stock_customer is company dependent: read it with the
+        # session company active or it resolves against the wrong company.
+        partner = order.partner_id.with_company(session.company_id.id)
+        dest_id = partner.property_stock_customer.id or session_destination_id
+        if dest_id in lines_by_dest:
+            lines_by_dest[dest_id] = lines_by_dest[dest_id] | order.lines
+            orders_by_dest[dest_id] = orders_by_dest[dest_id] | order
+        else:
+            lines_by_dest[dest_id] = order.lines
+            orders_by_dest[dest_id] = order
+
+    plan_log = (
+        plan_log + ' | ' + session.name + ': ' + str(len(orders))
+        + ' orders / ' + str(len(lines_by_dest)) + ' dest'
+    )
+
+    if not EXECUTE:
+        budget_left = budget_left - len(orders)
+        count_orders = count_orders + len(orders)
+        continue
+
+    # ---- One savepoint per destination group ------------------------------
+    for dest_id in lines_by_dest:
+        if aborted_conflict:
+            break
+
+        elapsed = (datetime.datetime.utcnow() - t_start).total_seconds()
+        if elapsed > TIME_BUDGET_SECONDS:
+            stopped_on_time = True
+            break
+
+        savepoint = 'hiopos_slice_' + str(session.id) + '_' + str(dest_id)
+        env.cr.execute('SAVEPOINT ' + savepoint)
+        try:
+            group_lines = lines_by_dest[dest_id]
+            group_orders = orders_by_dest[dest_id]
+
+            # Golden rule: act with the session company active so accounts,
+            # taxes and locations resolve against the right company.
+            target = Picking.with_company(session.company_id.id).with_context(
+                allowed_company_ids=[session.company_id.id],
+                skip_sms=True,
+            )
+
+            # Standard helper: creates the aggregated picking, explodes recipe
+            # components and calls _action_done() inside its own savepoint. It
+            # swallows UserError on missing stock and leaves it unvalidated.
+            pickings = target._create_picking_from_pos_order_lines(
+                dest_id, group_lines, picking_type
+            )
+
+            if pickings:
+                # Mirror what the session close writes, so the picking hangs
+                # off the session and cost computation finds its moves.
+                pickings.write({
+                    'pos_session_id': session.id,
+                    'origin': session.name,
+                })
+
+            # The stamp that makes the night close skip these orders.
+            order_vals = {'shipping_date': today_str}
+
+            if has_picking_field:
+                if pickings:
+                    # Prefer the sale picking: with refunds the helper also
+                    # returns a return picking, and a Many2one holds one.
+                    main_picking = pickings[0]
+                    for pk in pickings:
+                        if pk.picking_type_id.id == picking_type.id:
+                            main_picking = pk
+                            break
+                    order_vals[FIELD_PICKING] = main_picking.id
+
+            group_orders.write(order_vals)
+
+            # Writes are buffered: flush inside the try so a database error
+            # lands in this except block and not in the next group.
+            env.flush_all()
+
+            for pk in pickings:
+                created_log = created_log + ' | ' + str(pk.name) + ':' + str(pk.state)
+                if pk.state == 'done':
+                    count_pickings = count_pickings + 1
+                else:
+                    count_pending = count_pending + 1
+
+            count_orders = count_orders + len(group_orders)
+            env.cr.execute('RELEASE SAVEPOINT ' + savepoint)
+
+        except Exception as err:
+            env.cr.execute('ROLLBACK TO SAVEPOINT ' + savepoint)
+            # invalidate_all() calls flush_all() internally, which would
+            # replay the rolled back writes: always flush=False here.
+            env.invalidate_all(flush=False)
+
+            count_fail = count_fail + 1
+            message = str(err)
+            if len(message) > 400:
+                message = message[:400]
+            last_error = session.name + '/' + str(dest_id) + ': ' + message
+
+            # Name the blocked orders: this group is rebuilt identically next
+            # run, so a human has to look at them.
+            for order in orders_by_dest[dest_id]:
+                failed_log = failed_log + ' ' + str(order.name)
+
+            # PostgreSQL 40001. The connection survives the savepoint
+            # rollback, but the snapshot does not: stop the run instead of
+            # burning the remaining groups on guaranteed failures.
+            if 'could not serialize' in message:
+                aborted_conflict = True
+            if 'concurrent update' in message:
+                aborted_conflict = True
+
+    budget_left = budget_left - len(orders)
+
+
+# -------------------- BLOQUE 5: RESUMEN -----------------------------------
+# A run is worth logging when it failed, hit a conflict, left a picking
+# unvalidated, found a session in real time mode, or lost the Studio field.
+# Clean runs and idle runs stay silent.
+worth_logging = False
+if count_fail:
+    worth_logging = True
+if aborted_conflict:
+    worth_logging = True
+if count_pending:
+    worth_logging = True
+if skipped_realtime:
+    worth_logging = True
+if FIELD_PICKING:
+    if not has_picking_field:
+        worth_logging = True
+
+should_log = False
+if VERBOSE:
+    if config_ok:
+        if worth_logging:
+            should_log = True
+        if not LOG_ONLY_ON_WARNING:
+            should_log = True
+
+if should_log:
+    level = 'info'
+    if worth_logging:
+        level = 'warning'
+    prefix = 'HIOPOS DAY SLICE'
+    if not EXECUTE:
+        prefix = 'HIOPOS DAY SLICE [DRY RUN]'
+    log(
+        prefix
+        + ' busy_cron=' + str(crons_busy)
+        + ' configs=' + str(len(config_ids))
+        + ' probes=' + str(len(PAUSE_WHILE_CRON_IDS))
+        + ' picking_field=' + str(has_picking_field)
+        + ' conflict_abort=' + str(aborted_conflict)
+        + ' sessions=' + str(len(sessions))
+        + ' orders=' + str(count_orders)
+        + ' pickings_done=' + str(count_pickings)
+        + ' pickings_pending=' + str(count_pending)
+        + ' groups_failed=' + str(count_fail)
+        + ' skipped_realtime=' + str(skipped_realtime)
+        + ' time_capped=' + str(stopped_on_time)
+        + ' plan=' + plan_log
+        + ' created=' + created_log
+        + ' blocked_orders=' + failed_log
+        + ' last_error=' + last_error,
+        level=level,
+    )]]></field>
+            <field name="interval_number" eval="2"/>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall" eval="-1"/>
+            <field name="doall" eval="False"/>
+            <field name="priority" eval="20"/>
+            <field name="active" eval="False"/>
+        </record>
+    </data>
+</odoo>

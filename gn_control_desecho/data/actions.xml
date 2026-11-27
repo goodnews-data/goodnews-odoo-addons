@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <!-- Automatización (activa en prod: True) -->
+        <record id="automation_10" model="base.automation">
+            <field name="name">Confirmar ordenes de fabricación</field>
+            <field name="model_id" ref="mrp.model_mrp_production"/>
+            <field name="trigger">on_time_created</field>
+            <field name="active" eval="True"/>
+            <field name="filter_pre_domain">["&amp;", ("state", "in", ["to_close"]), ("state", "not in", ["draft", "cancel", "done"])]</field>
+            <field name="trigger_field_ids" eval="[Command.set([ref('mrp.field_mrp_production__create_date')])]"/>
+            <field name="trg_date_id" ref="mrp.field_mrp_production__create_date"/>
+            <field name="trg_date_range" eval="5"/>
+            <field name="trg_date_range_type">minutes</field>
+        </record>
+
+        <!-- Automatización (activa en prod: False) -->
+        <record id="automation_29" model="base.automation">
+            <field name="name">Validar desecho store app</field>
+            <field name="model_id" ref="stock.model_stock_scrap"/>
+            <field name="trigger">on_time_updated</field>
+            <field name="active" eval="False"/>
+            <field name="filter_pre_domain">[("origin", "ilike", "Store")]</field>
+            <field name="filter_domain">[("origin", "ilike", "Store")]</field>
+            <field name="trigger_field_ids" eval="[Command.set([ref('stock.field_stock_scrap__write_date')])]"/>
+            <field name="trg_date_id" ref="stock.field_stock_scrap__write_date"/>
+            <field name="trg_date_range" eval="1"/>
+            <field name="trg_date_range_type">minutes</field>
+        </record>
+
+        <record id="action_server_1735" model="ir.actions.server">
+            <field name="name">Ejecutar código</field>
+            <field name="model_id" ref="mrp.model_mrp_production"/>
+            <field name="state">code</field>
+            <field name="usage">base_automation</field>
+            <field name="code"><![CDATA[for production in records:
+    try:
+        # STEP 1 - CONFIRM
+        if production.state == 'draft':
+            production.action_confirm()
+        # STEP 2 - ASSIGN (reserve components)
+        production.action_assign()
+        # STEP 3 - SET qty_producing
+        production.write({'qty_producing': production.product_qty})
+        # STEP 4 - set_qty_producing() setea qty_done en todos los componentes
+        production.set_qty_producing()
+        # STEP 5 - MARK DONE sin wizards
+        # En Odoo 17 button_mark_done() puede levantar:
+        #   - mrp.immediate.transfer  → si hay componentes sin qty_done
+        #   - mrp.production.backorder → si qty_producing < product_qty
+        # La solución es llamar _pre_button_mark_done() + con el contexto correcto
+        production.with_context(
+            skip_immediate=True,
+            skip_backorder=True,
+            mo_ids_to_backorder=None
+        ).button_mark_done()
+    except Exception as e:
+        production.message_post(
+            body="❌ ERROR DETECTED: " + str(e)
+        )
+        raise]]></field>
+            <field name="base_automation_id" ref="automation_10"/>
+        </record>
+
+        <record id="action_server_1736" model="ir.actions.server">
+            <field name="name">Crear ordenes de desecho</field>
+            <field name="model_id" ref="gn_control_desecho_base.model_x_control_de_desecho"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[today = datetime.date.today()
+records = env['x_control_de_desecho'].search([
+    ('x_studio_active', '=', True),
+    ('x_studio_next_date', '>=', datetime.datetime.combine(today, datetime.time.min)),
+    ('x_studio_next_date', '<=', datetime.datetime.combine(today, datetime.time.max)),
+])
+for record in records:
+    product = record.x_studio_product_product
+    locations = record.x_studio_warehouse
+    if not product:
+        continue
+    if not locations:
+        continue
+    # Cachear como string ANTES del bucle: si un scrap falla y la caché
+    # del producto se invalida, el message_post al final seguirá funcionando.
+    product_name = product.display_name
+    errors = []  # acumular errores para postear UN solo mensaje al final
+    # 🔹 Agrupar stock por ubicación en UNA sola query
+    quant_data = env['stock.quant'].read_group(
+        [
+            ('product_id', '=', product.id),
+            ('location_id', 'in', locations.ids),
+            ('quantity', '>', 0)
+        ],
+        ['quantity:sum'],
+        ['location_id']
+    )
+    for quant in quant_data:
+        location_id = quant['location_id'][0]
+        total_qty = quant['quantity']
+        if total_qty <= 0:
+            continue
+        # SAVEPOINT manual con SQL (en safe_eval `with` está prohibido).
+        # Nombre único por record + location para evitar colisiones.
+        sp_name = "sp_scrap_%s_%s" % (record.id, location_id)
+        env.cr.execute("SAVEPOINT " + sp_name)
+        try:
+            scrap = env['stock.scrap'].create({
+                'product_id': product.id,
+                'scrap_qty': total_qty,
+                'location_id': location_id,
+                'company_id': record.x_studio_company.id,
+                'origin': record.display_name,
+            })
+            scrap.action_validate()
+            # Éxito: liberamos el savepoint
+            env.cr.execute("RELEASE SAVEPOINT " + sp_name)
+        except Exception as e:
+            # Fallo: rollback al savepoint deja la transacción exterior sana
+            env.cr.execute("ROLLBACK TO SAVEPOINT " + sp_name)
+            errors.append((location_id, str(e)))
+    # 🔹 Actualizar fechas en un solo write
+    now = datetime.datetime.utcnow()
+    vals = {
+        'x_studio_last_date': now
+    }
+    if record.x_studio_frequency:
+        frequency = int(record.x_studio_frequency)
+        next_date = now + datetime.timedelta(days=frequency)
+        if record.x_studio_weekday:
+            target_weekday = int(record.x_studio_weekday) - 1
+            days_to_add = (target_weekday - next_date.weekday()) % 7
+            next_date = next_date + datetime.timedelta(days=days_to_add)
+        vals['x_studio_next_date'] = next_date
+    record.write(vals)
+    # UN solo mensaje al chatter, solo si hubo errores
+    if errors:
+        lines = "".join(
+            f"<li>Ubicación #{loc_id}: {msg}</li>"
+            for loc_id, msg in errors
+        )
+        record.message_post(
+            body=f"🚨 ERROR procesando desecho automático {product_name}:<ul>{lines}</ul>"
+        )]]></field>
+        </record>
+
+        <record id="action_server_1737" model="ir.actions.server">
+            <field name="name">Crear compensación por negativos</field>
+            <field name="model_id" ref="gn_control_desecho_base.model_x_control_de_desecho"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[today = datetime.date.today()
+records = env['x_control_de_desecho'].search([
+    ('x_studio_active', '=', True),
+])
+for record in records:
+    product = record.x_studio_product_product
+    locations = record.x_studio_warehouse
+    if not product or not locations:
+        continue
+    errors = []  # acumular errores para postear UN solo mensaje al final
+    quant_data = env['stock.quant'].read_group(
+        [
+            ('product_id', '=', product.id),
+            ('location_id', 'in', locations.ids),
+            ('quantity', '<', 0)
+        ],
+        ['quantity:sum'],
+        ['location_id']
+    )
+    for quant in quant_data:
+        location_id = quant['location_id'][0]
+        total_qty = quant['quantity']
+        if total_qty >= 0:
+            continue
+        abs_qty = abs(total_qty)
+        if abs_qty <= 0.20:
+            qty_to_produce = abs_qty
+        else:
+            int_part = int(abs_qty)
+            qty_to_produce = int_part if abs_qty == int_part else int_part + 1
+        # Buscar picking type por ubicación de origen
+        picking_type = env['stock.picking.type'].search([
+            ('code', '=', 'mrp_operation'),
+            ('default_location_src_id', '=', location_id),
+        ], limit=1)
+        # Si no encuentra por src, buscar por dest
+        if not picking_type:
+            picking_type = env['stock.picking.type'].search([
+                ('code', '=', 'mrp_operation'),
+                ('default_location_dest_id', '=', location_id),
+            ], limit=1)
+        mo_vals = {
+            'product_id': product.id,
+            'product_qty': qty_to_produce,
+            'product_uom_id': product.uom_id.id,
+            'location_src_id': location_id,
+            'location_dest_id': location_id,
+            'company_id': record.x_studio_company.id,
+            'origin': f"AUTO FIX NEGATIVE {record.display_name}",
+        }
+        if picking_type:
+            mo_vals['picking_type_id'] = picking_type.id
+        try:
+            mo = env['mrp.production'].create(mo_vals)
+            # (sin message_post de éxito — antes era el que llenaba el chatter)
+        except Exception as e:
+            errors.append((location_id, str(e)))
+    # UN solo mensaje al chatter, solo si hubo errores
+    if errors:
+        lines = "".join(
+            f"<li>Ubicación #{loc_id}: {msg}</li>"
+            for loc_id, msg in errors
+        )
+        record.message_post(
+            body=f"🚨 ERROR creando MO {product.display_name}:<ul>{lines}</ul>"
+        )]]></field>
+        </record>
+
+        <record id="action_server_1870" model="ir.actions.server">
+            <field name="name">Ejecutar código</field>
+            <field name="model_id" ref="stock.model_stock_scrap"/>
+            <field name="state">code</field>
+            <field name="usage">base_automation</field>
+            <field name="code"><![CDATA[# ============================================================================
+#  GoodNews · Auto-validar desechos de store-operations
+#  Tipo:       Regla de automatizacion (base.automation)
+#  Modelo:     stock.scrap
+#  Disparador: Al crear
+#  Dominio:    [('origin', 'ilike', 'store-operations-')]
+#  Accion:     Ejecutar codigo Python
+#  safe_eval:  sin import / def / with / lambda / comprehensions / fields.*
+#
+#  Flujo: validar -> si falta stock, regularizar quant al entero superior
+#         -> volver a validar.
+# ============================================================================
+
+# ---------------------------------------------------------------- BLOQUE 0
+# Constantes (unico sitio a tocar)
+EXECUTE             = True     # False = simulacion (todo se revierte, solo chatter)
+ADJUST_STOCK        = True     # False = comportamiento antiguo (no regulariza)
+MAX_AUTO_ADJUST_QTY = 10.0     # tope de seguridad; 0.0 = sin limite
+ERROR_MSG_MAX_CHARS = 300
+STATE_DONE          = "done"
+STATE_CANCEL        = "cancel"
+TYPE_STORABLE       = "product"
+NOTE_SUBTYPE        = "mail.mt_note"
+
+precision = env["decimal.precision"].precision_get("Product Unit of Measure")
+
+for record in records:
+    if record.state == STATE_DONE or record.state == STATE_CANCEL:
+        continue
+
+    sp_name = "sp_auto_scrap_%s" % int(record.id)
+    env.cr.execute("SAVEPOINT " + sp_name)
+    try:
+        note = ""
+
+        # -------------------------------------------------------- PASO 1
+        # Primer intento. Si falta stock, Odoo devuelve el dict del asistente
+        # stock.warn.insufficient.qty.scrap SIN escribir nada.
+        result = record.action_validate()
+
+        # -------------------------------------------------------- PASO 2
+        # Regularizacion: crear/ajustar quant al entero superior de la merma.
+        needs_adjust = isinstance(result, dict)
+        if needs_adjust and ADJUST_STOCK and record.product_id.type == TYPE_STORABLE:
+            product = record.product_id
+            company = record.company_id or env.company
+            quantEnv = env["stock.quant"].sudo().with_company(company.id).with_context(inventory_mode=True)
+
+            # Mismos criterios que usa action_validate() para medir disponible.
+            quants = quantEnv._gather(product, record.location_id,
+                                      lot_id=record.lot_id,
+                                      package_id=record.package_id,
+                                      owner_id=record.owner_id,
+                                      strict=True)
+            available = sum(quants.mapped("quantity"))
+
+            # scrap_qty puede venir en otra UdM: convertir a la UdM del producto.
+            qty_needed = record.product_uom_id._compute_quantity(record.scrap_qty, product.uom_id)
+
+            # Entero superior: 0,25 -> 1 ; 1,5 -> 2 ; 2,0 -> 2
+            target = int(qty_needed)
+            if float_compare(qty_needed, target, precision_digits=precision) > 0:
+                target = target + 1
+
+            over_limit = False
+            if MAX_AUTO_ADJUST_QTY > 0.0:
+                if float_compare(target, MAX_AUTO_ADJUST_QTY, precision_digits=precision) > 0:
+                    over_limit = True
+
+            if over_limit:
+                note = ("Ajuste automatico NO aplicado: la cantidad requerida (%s) supera "
+                        "el tope de seguridad (%s)." % (target, MAX_AUTO_ADJUST_QTY))
+            else:
+                # inventory_quantity_auto_apply fija el TOTAL del quant, no suma.
+                # Si ya habia algo suelto, se ajusta ese quant para que el total
+                # disponible alcance el entero objetivo.
+                base_qty = 0.0
+                if quants:
+                    base_qty = quants[0].quantity
+                new_qty = base_qty + (target - available)
+
+                vals = {
+                    "product_id": product.id,
+                    "location_id": record.location_id.id,
+                    "inventory_quantity_auto_apply": new_qty,
+                }
+                if record.lot_id:
+                    vals["lot_id"] = record.lot_id.id
+                if record.package_id:
+                    vals["package_id"] = record.package_id.id
+                if record.owner_id:
+                    vals["owner_id"] = record.owner_id.id
+
+                quantEnv.create(vals)
+
+                note = ("Regularizacion automatica de stock previa al desecho.\n"
+                        "Producto: %s\n"
+                        "Ubicacion: %s\n"
+                        "Lote: %s\n"
+                        "Disponible: %s %s\n"
+                        "Necesario: %s %s\n"
+                        "Ajustado a: %s %s"
+                        % (product.display_name,
+                           record.location_id.display_name,
+                           record.lot_id.name or "-",
+                           available, product.uom_id.name,
+                           qty_needed, product.uom_id.name,
+                           target, product.uom_id.name))
+
+                # ------------------------------------------------ PASO 3
+                # Segundo intento, ya con stock suficiente.
+                result = record.action_validate()
+
+        env.flush_all()
+
+        # -------------------------------------------------------- PASO 4
+        if not EXECUTE:
+            env.cr.execute("ROLLBACK TO SAVEPOINT " + sp_name)
+            env.invalidate_all(flush=False)
+            body = "SIMULACION (EXECUTE=False). No se ha modificado nada."
+            if note:
+                body = body + "\n" + note
+            if isinstance(result, dict):
+                body = body + "\nResultado: el desecho NO se habria validado."
+            else:
+                body = body + "\nResultado: el desecho se habria validado."
+            record.message_post(body=body, subtype_xmlid=NOTE_SUBTYPE)
+
+        elif isinstance(result, dict):
+            # Sigue sin poder validarse tras el ajuste (o ADJUST_STOCK=False).
+            env.cr.execute("ROLLBACK TO SAVEPOINT " + sp_name)
+            env.invalidate_all(flush=False)
+            body = "Desecho automatico no validado: stock insuficiente."
+            if note:
+                body = body + "\n" + note
+            record.message_post(body=body, subtype_xmlid=NOTE_SUBTYPE)
+
+        else:
+            env.cr.execute("RELEASE SAVEPOINT " + sp_name)
+            if note:
+                record.message_post(body=note, subtype_xmlid=NOTE_SUBTYPE)
+
+    except Exception as e:
+        env.cr.execute("ROLLBACK TO SAVEPOINT " + sp_name)
+        env.invalidate_all(flush=False)
+        record.message_post(
+            body="Error validando desecho automatico: %s" % str(e)[:ERROR_MSG_MAX_CHARS],
+            subtype_xmlid=NOTE_SUBTYPE,
+        )]]></field>
+            <field name="base_automation_id" ref="automation_29"/>
+        </record>
+
+        <record id="action_window_1733" model="ir.actions.act_window">
+            <field name="name">Control de desecho</field>
+            <field name="res_model">x_control_de_desecho</field>
+            <field name="view_mode">tree,form</field>
+            <field name="binding_view_types">list,form</field>
+            <field name="help" type="html"><p class="o_view_nocontent_smiling_face">
+                    Esta es tu nueva acción.
+                </p>
+                <p>Por defecto, contiene una lista y una vista de formulario y posiblemente
+                    otros tipos de vista dependiendo de las opciones que hayas elegido para tu modelo.
+                </p>
+                <p>
+                    Puede empezar a personalizar estas pantallas haciendo clic en el icono de Studio en la
+                    esquina superior derecha (también puede personalizar este mensaje de ayuda allí).
+                </p>
+            </field>
+        </record>
+</odoo>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <!-- Point of Sale / Preparation Display -->
+        <record id="group_146" model="res.groups">
+            <field name="name">Preparation Display</field>
+            <field name="category_id" ref="base.module_category_accounting_localizations_point_of_sale"/>
+        </record>
+
+        <!-- Inventory / Administrador Pro -->
+        <record id="group_148" model="res.groups">
+            <field name="name">Administrador Pro</field>
+            <field name="category_id" ref="base.module_category_inventory_inventory"/>
+            <field name="implied_ids" eval="[Command.set([ref('account.group_account_invoice'), ref('stock.group_stock_user')])]"/>
+        </record>
+
+        <!-- Inventory / Puntos de venta -->
+        <record id="group_156" model="res.groups">
+            <field name="name">Puntos de venta</field>
+            <field name="category_id" ref="base.module_category_inventory"/>
+        </record>
+
+        <!-- Inventory / Puntos de venta (nude) -->
+        <record id="group_168" model="res.groups">
+            <field name="name">Puntos de venta (nude)</field>
+            <field name="category_id" ref="base.module_category_inventory"/>
+        </record>
+
+        <!-- Point Of Sale / Usuario (nude) -->
+        <record id="group_170" model="res.groups">
+            <field name="name">Usuario (nude)</field>
+            <field name="category_id" ref="base.module_category_sales_point_of_sale"/>
+        </record>
+
+        <!-- Point Of Sale / Tools -->
+        <record id="group_178" model="res.groups">
+            <field name="name">Tools</field>
+            <field name="category_id" ref="base.module_category_sales_point_of_sale"/>
+        </record>
+
+        <!-- Point Of Sale / Store app -->
+        <record id="group_179" model="res.groups">
+            <field name="name">Store app</field>
+            <field name="category_id" ref="base.module_category_sales_point_of_sale"/>
+        </record>
+</odoo>

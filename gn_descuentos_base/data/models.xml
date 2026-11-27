@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="field_pos_custom_discount__x_studio_active_1" model="ir.model.fields">
+            <field name="name">x_studio_active_1</field>
+            <field name="model_id" ref="pos_custom_discounts.model_pos_custom_discount"/>
+            <field name="field_description">Activo</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_pos_custom_discount__x_studio_end_date" model="ir.model.fields">
+            <field name="name">x_studio_end_date</field>
+            <field name="model_id" ref="pos_custom_discounts.model_pos_custom_discount"/>
+            <field name="field_description">Fecha fin</field>
+            <field name="ttype">date</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_pos_custom_discount__x_studio_start_date" model="ir.model.fields">
+            <field name="name">x_studio_start_date</field>
+            <field name="model_id" ref="pos_custom_discounts.model_pos_custom_discount"/>
+            <field name="field_description">Fecha inicio</field>
+            <field name="ttype">date</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_pos_custom_discount__x_studio_available_in_pos" model="ir.model.fields">
+            <field name="name">x_studio_available_in_pos</field>
+            <field name="model_id" ref="pos_custom_discounts.model_pos_custom_discount"/>
+            <field name="field_description">Scheduled in Pos</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">pos.config</field>
+            <field name="relation_table">x_pos_config_pos_custom_discount_rel</field>
+            <field name="column1">pos_custom_discount_id</field>
+            <field name="column2">pos_config_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+</odoo>

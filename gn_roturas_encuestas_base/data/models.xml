@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="field_survey_question__x_studio_binary_field_112_1j0mkrkq1" model="ir.model.fields">
+            <field name="name">x_studio_binary_field_112_1j0mkrkq1</field>
+            <field name="model_id" ref="survey.model_survey_question"/>
+            <field name="field_description">Nuevo Archivo</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_question__x_studio_binary_field_112_1j0mkrkq1_filename" model="ir.model.fields">
+            <field name="name">x_studio_binary_field_112_1j0mkrkq1_filename</field>
+            <field name="model_id" ref="survey.model_survey_question"/>
+            <field name="field_description">Filename for x_studio_binary_field_112_1j0mkrkq1</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_question__x_studio_binary_field_4gs_1j0mkvuf8" model="ir.model.fields">
+            <field name="name">x_studio_binary_field_4gs_1j0mkvuf8</field>
+            <field name="model_id" ref="survey.model_survey_question"/>
+            <field name="field_description">Nuevo Archivo</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_question__x_studio_binary_field_4gs_1j0mkvuf8_filename" model="ir.model.fields">
+            <field name="name">x_studio_binary_field_4gs_1j0mkvuf8_filename</field>
+            <field name="model_id" ref="survey.model_survey_question"/>
+            <field name="field_description">Filename for x_studio_binary_field_4gs_1j0mkvuf8</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_question__x_studio_binary_field_8th_1j0mkn3n3" model="ir.model.fields">
+            <field name="name">x_studio_binary_field_8th_1j0mkn3n3</field>
+            <field name="model_id" ref="survey.model_survey_question"/>
+            <field name="field_description">Nuevo Archivo</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_question__x_studio_binary_field_8th_1j0mkn3n3_filename" model="ir.model.fields">
+            <field name="name">x_studio_binary_field_8th_1j0mkn3n3_filename</field>
+            <field name="model_id" ref="survey.model_survey_question"/>
+            <field name="field_description">Filename for x_studio_binary_field_8th_1j0mkn3n3</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_question__x_studio_binary_field_bj_1j0mkppdb" model="ir.model.fields">
+            <field name="name">x_studio_binary_field_bj_1j0mkppdb</field>
+            <field name="model_id" ref="survey.model_survey_question"/>
+            <field name="field_description">Nuevo Archivo</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_question__x_studio_binary_field_bj_1j0mkppdb_filename" model="ir.model.fields">
+            <field name="name">x_studio_binary_field_bj_1j0mkppdb_filename</field>
+            <field name="model_id" ref="survey.model_survey_question"/>
+            <field name="field_description">Filename for x_studio_binary_field_bj_1j0mkppdb</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_question_answer__x_studio_idproduct" model="ir.model.fields">
+            <field name="name">x_studio_idproduct</field>
+            <field name="model_id" ref="survey.model_survey_question_answer"/>
+            <field name="field_description">ID</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_question_answer__x_studio_producto_data_id" model="ir.model.fields">
+            <field name="name">x_studio_producto_data_id</field>
+            <field name="model_id" ref="survey.model_survey_question_answer"/>
+            <field name="field_description">Product ID</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_survey__x_studio_binary_field_5an_1j0mjidjl" model="ir.model.fields">
+            <field name="name">x_studio_binary_field_5an_1j0mjidjl</field>
+            <field name="model_id" ref="survey.model_survey_survey"/>
+            <field name="field_description">Nuevo Archivo</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_survey__x_studio_binary_field_5an_1j0mjidjl_filename" model="ir.model.fields">
+            <field name="name">x_studio_binary_field_5an_1j0mjidjl_filename</field>
+            <field name="model_id" ref="survey.model_survey_survey"/>
+            <field name="field_description">Filename for x_studio_binary_field_5an_1j0mjidjl</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_survey__x_studio_binary_field_9lj_1j0mkkdlo" model="ir.model.fields">
+            <field name="name">x_studio_binary_field_9lj_1j0mkkdlo</field>
+            <field name="model_id" ref="survey.model_survey_survey"/>
+            <field name="field_description">Nuevo Archivo</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_survey__x_studio_binary_field_9lj_1j0mkkdlo_filename" model="ir.model.fields">
+            <field name="name">x_studio_binary_field_9lj_1j0mkkdlo_filename</field>
+            <field name="model_id" ref="survey.model_survey_survey"/>
+            <field name="field_description">Filename for x_studio_binary_field_9lj_1j0mkkdlo</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_user_input__x_studio_managed" model="ir.model.fields">
+            <field name="name">x_studio_managed</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="field_description">Done</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_user_input__x_studio_read" model="ir.model.fields">
+            <field name="name">x_studio_read</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="field_description">Read</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_user_input_line__x_studio_fake" model="ir.model.fields">
+            <field name="name">x_studio_fake</field>
+            <field name="model_id" ref="survey.model_survey_user_input_line"/>
+            <field name="field_description"></field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_user_input_line__x_studio_handled" model="ir.model.fields">
+            <field name="name">x_studio_handled</field>
+            <field name="model_id" ref="survey.model_survey_user_input_line"/>
+            <field name="field_description">Handled</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_question_answer__x_studio_delivery_address" model="ir.model.fields">
+            <field name="name">x_studio_delivery_address</field>
+            <field name="model_id" ref="survey.model_survey_question_answer"/>
+            <field name="field_description">Entrega</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">stock.picking.type</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_question_answer__x_studio_product_product_id" model="ir.model.fields">
+            <field name="name">x_studio_product_product_id</field>
+            <field name="model_id" ref="survey.model_survey_question_answer"/>
+            <field name="field_description">Producto</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">product.product</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_user_input__x_studio_purchase_order" model="ir.model.fields">
+            <field name="name">x_studio_purchase_order</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="field_description">Purchase order</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">purchase.order</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_survey_user_input__x_studio_out_of_stock" model="ir.model.fields">
+            <field name="name">x_studio_out_of_stock</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="field_description">Out of stock</field>
+            <field name="ttype">one2many</field>
+            <field name="state">manual</field>
+            <field name="relation">survey.user_input.line</field>
+            <field name="relation_field">user_input_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="False"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+</odoo>

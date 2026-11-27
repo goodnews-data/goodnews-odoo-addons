@@ -1,0 +1,453 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="action_server_1649" model="ir.actions.server">
+            <field name="name">Cancelar Sdp</field>
+            <field name="model_id" ref="purchase.model_purchase_order"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# =====================================================================
+# Cancel purchase orders through the native flow. Action 1649.
+# Type: "Ejecutar código". Allowed group: Compras / Administrador.
+# button_cancel() refuses orders with done receipts or posted bills
+# and cancels their pending pickings, unlike writing state directly.
+# =====================================================================
+records.button_cancel()
+
+]]></field>
+            <field name="binding_model_id" ref="purchase.model_purchase_order"/>
+            <field name="groups_id" eval="[Command.set([ref('purchase.group_purchase_manager')])]"/>
+            <field name="binding_view_types">list,form</field>
+        </record>
+
+        <record id="action_server_1686" model="ir.actions.server">
+            <field name="name">Desactivar cookies holy</field>
+            <field name="model_id" ref="product.model_product_template"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# IDs to update in product.template
+ids_true = [22499, 22500, 22501]
+ids_false = [22404, 22405, 22407]
+
+templates_true = env["product.template"].browse(ids_true).exists()
+templates_false = env["product.template"].browse(ids_false).exists()
+
+if templates_true:
+    templates_true.write({"available_in_pos": True})
+
+if templates_false:
+    templates_false.write({"available_in_pos": False})
+]]></field>
+        </record>
+
+        <record id="action_server_1694" model="ir.actions.server">
+            <field name="name">Activar Oysho</field>
+            <field name="model_id" ref="product.model_product_template"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[ids_true = [22502, 22503]
+
+templates_true = env["product.template"].browse(ids_true).exists()
+
+templates_true.sudo().write({"available_in_pos": True})
+]]></field>
+        </record>
+
+        <record id="action_server_1734" model="ir.actions.server">
+            <field name="name">Asignar cuentas</field>
+            <field name="model_id" ref="product.model_product_template"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[BATCH_SIZE = 200
+
+records = env['product.template'].search([('categ_id', '!=', False)])
+
+updates = {}
+for record in records:
+    categ = record.categ_id
+
+    vals = {}
+    if categ.property_account_income_categ_id:
+        vals["property_account_income_id"] = categ.property_account_income_categ_id.id
+    if categ.property_account_expense_categ_id:
+        vals["property_account_expense_id"] = categ.property_account_expense_categ_id.id
+
+    if vals:
+        key = tuple(sorted(vals.items()))
+        if key not in updates:
+            updates[key] = (vals, [])
+        updates[key][1].append(record.id)
+
+for key, (vals, record_ids) in updates.items():
+    for i in range(0, len(record_ids), BATCH_SIZE):
+        batch_ids = record_ids[i:i + BATCH_SIZE]
+        env['product.template'].browse(batch_ids).write(vals)
+
+
+]]></field>
+        </record>
+
+        <record id="action_server_1773" model="ir.actions.server">
+            <field name="name">[PRUEBA] Confirmar pedido con reintentos</field>
+            <field name="model_id" ref="purchase.model_purchase_order"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ============================================================
+# [PRUEBA / DRY RUN] Confirm purchase order — retry logic test.
+# ============================================================
+# This action exercises the FULL retry pipeline (savepoints, error
+# classification, chatter writes, bus notifications, pg_sleep,
+# transactional commits) WITHOUT ever calling button_confirm.
+#
+# The order state, lines, taxes, stock moves — none of that is
+# touched. Only the chatter gains test-marked messages.
+#
+# Use this to validate behavior in production safely. When done,
+# DELETE this server action and use the real one.
+# ============================================================
+# CS50-style: explicit constants at top, guard clauses, single
+# responsibility per block, defensive against silent failures.
+# Safe_eval-compliant: no imports, no def, no attribute assignment,
+# no `with` statements (manual SAVEPOINT via SQL).
+# ============================================================
+
+# --- DRY RUN scenario ----------------------------------------
+# Choose which scenario to simulate:
+#   1 = transient 403, success at attempt DRY_RUN_SUCCESS_AT
+#       (validates: retries, toasts, sleeps, recovery, chatter)
+#   2 = transient 403 that never recovers
+#       (validates: full retry exhaustion + final UserError)
+#   3 = permanent error (Missing Califrais ID)
+#       (validates: short-circuit on denylist, no retry, no sleep)
+DRY_RUN_SCENARIO = 1
+DRY_RUN_SUCCESS_AT = 3
+# -------------------------------------------------------------
+
+# --- Configuration (mirrors the real action) -----------------
+MAX_ATTEMPTS = 4
+RETRY_DELAY_SECONDS = 10
+
+RETRYABLE_API_TOKEN = "rungismarket"
+RETRYABLE_STATUS_TOKENS = ("Status Code: 403", "403 Forbidden")
+
+NEVER_RETRY_TOKENS = (
+    "Missing Califrais ID",
+    "does not exist in Califrais",
+    "Internal Server Error",
+    "Status Code: 500",
+    "\"status\":500",
+)
+
+RETRYABLE_LABEL = "API externa rungismarket"
+CONFIRMABLE_STATES = ("draft", "sent")
+NOTIF_CHANNEL = env.user.partner_id
+NOTIF_TYPE = "simple_notification"
+TEST_TAG = "[PRUEBA] "  # visible marker on every chatter/toast message
+
+# Simulated error strings (mirror real-world payloads) -------
+SIM_TRANSIENT_ERROR = (
+    "[SIMULADO] URL: https://rungismarket.com/api/buyer/delivery_day, "
+    "Status Code: 403, Response: 403 Forbidden"
+)
+SIM_PERMANENT_ERROR = "[SIMULADO] Missing Califrais ID for Test Product"
+# -------------------------------------------------------------
+
+for order in records:
+    # Guard: skip orders that are not in a confirmable state.
+    if order.state not in CONFIRMABLE_STATES:
+        order.message_post(
+            body=TEST_TAG + "Acción ignorada: el pedido ya está en estado <b>"
+                 + str(order.state) + "</b>."
+        )
+        continue
+
+    # Announce the test in the chatter so the user knows what to expect.
+    order.message_post(
+        body=TEST_TAG + "Iniciando simulación. Escenario: <b>"
+             + str(DRY_RUN_SCENARIO) + "</b>. "
+             "<i>El pedido NO va a confirmarse — solo se ejerce la lógica de reintentos.</i>"
+    )
+
+    confirmed = False
+    last_error_msg = ""
+
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        sp_name = "sp_test_" + str(order.id) + "_" + str(attempt)
+        env.cr.execute("SAVEPOINT " + sp_name)
+
+        attempt_succeeded = False
+
+        try:
+            # ===== SIMULATION =====
+            # The real action calls order.button_confirm() here.
+            # We replace it with a controlled exception (or no-op
+            # for simulated success) so the order state is untouched.
+            if DRY_RUN_SCENARIO == 1:
+                if attempt < DRY_RUN_SUCCESS_AT:
+                    raise Exception(SIM_TRANSIENT_ERROR)
+                # Otherwise: simulated success — do nothing, fall through.
+            elif DRY_RUN_SCENARIO == 2:
+                raise Exception(SIM_TRANSIENT_ERROR)
+            elif DRY_RUN_SCENARIO == 3:
+                raise Exception(SIM_PERMANENT_ERROR)
+            else:
+                raise Exception(
+                    "[SIMULADO] DRY_RUN_SCENARIO no válido: "
+                    + str(DRY_RUN_SCENARIO)
+                )
+            # ===== END SIMULATION =====
+
+            attempt_succeeded = True
+        except Exception as err:
+            env.cr.execute("ROLLBACK TO SAVEPOINT " + sp_name)
+            order.invalidate_recordset()
+            last_error_msg = str(err)
+
+            # --- Error classification (identical to production) ---
+            is_blocked = False
+            for token in NEVER_RETRY_TOKENS:
+                if token in last_error_msg:
+                    is_blocked = True
+
+            mentions_api = RETRYABLE_API_TOKEN in last_error_msg
+
+            has_retry_status = False
+            for token in RETRYABLE_STATUS_TOKENS:
+                if token in last_error_msg:
+                    has_retry_status = True
+
+            is_retryable = mentions_api and has_retry_status and not is_blocked
+            # --- End classification ---
+
+            if not is_retryable:
+                order.message_post(
+                    body=TEST_TAG + "Error <b>no recuperable</b> (clasificación correcta — "
+                         "no se reintenta):<br/><pre>" + last_error_msg + "</pre>"
+                )
+                # In production this would `raise` the original exception.
+                # In dry-run we raise UserError so Odoo shows a clean
+                # modal without a Python traceback.
+                raise UserError(
+                    TEST_TAG + "Simulación de error no recuperable propagada correctamente.\n\n"
+                    + last_error_msg
+                )
+
+        if attempt_succeeded:
+            env.cr.execute("RELEASE SAVEPOINT " + sp_name)
+            confirmed = True
+
+            if attempt > 1:
+                order.message_post(
+                    body=TEST_TAG + "Confirmación SIMULADA exitosa en el intento "
+                         + str(attempt) + " de " + str(MAX_ATTEMPTS)
+                         + " (" + RETRYABLE_LABEL + " estabilizada)."
+                )
+                env["bus.bus"]._sendone(NOTIF_CHANNEL, NOTIF_TYPE, {
+                    "title": TEST_TAG + "Pedido " + order.name + " (simulado)",
+                    "message": "Confirmación simulada lograda en el intento "
+                               + str(attempt) + " de " + str(MAX_ATTEMPTS) + ".",
+                    "type": "success",
+                    "sticky": False,
+                })
+            else:
+                # Scenario 1 with DRY_RUN_SUCCESS_AT = 1 would land here.
+                order.message_post(
+                    body=TEST_TAG + "Confirmación SIMULADA exitosa al primer intento "
+                         "(sin reintentos necesarios)."
+                )
+            break
+
+        # ----- Failure path -----
+        if attempt >= MAX_ATTEMPTS:
+            order.message_post(
+                body=TEST_TAG + "Intento final " + str(attempt) + "/"
+                     + str(MAX_ATTEMPTS) + " fallido ("
+                     + RETRYABLE_LABEL + ")."
+            )
+            break
+
+        wait_text = (TEST_TAG + "Intento " + str(attempt) + "/" + str(MAX_ATTEMPTS)
+                     + " fallido. Reintentando en "
+                     + str(RETRY_DELAY_SECONDS) + " segundos...")
+
+        order.message_post(body=wait_text + " (" + RETRYABLE_LABEL + ")")
+        env["bus.bus"]._sendone(NOTIF_CHANNEL, NOTIF_TYPE, {
+            "title": TEST_TAG + "Reintentando " + order.name,
+            "message": wait_text,
+            "type": "warning",
+            "sticky": False,
+        })
+
+        env.cr.commit()
+        env.cr.execute("SELECT pg_sleep(%s)", (RETRY_DELAY_SECONDS,))
+
+    if not confirmed:
+        order.message_post(
+            body=TEST_TAG + "Simulación: no se pudo confirmar tras "
+                 + str(MAX_ATTEMPTS) + " intentos. Último error:<br/>"
+                 "<pre>" + last_error_msg + "</pre>"
+        )
+        env["bus.bus"]._sendone(NOTIF_CHANNEL, NOTIF_TYPE, {
+            "title": TEST_TAG + "Confirmación fallida: " + order.name,
+            "message": "Simulación: " + str(MAX_ATTEMPTS) + " intentos agotados.",
+            "type": "danger",
+            "sticky": True,
+        })
+        raise UserError(
+            TEST_TAG + "Simulación completada: "
+            + str(MAX_ATTEMPTS) + " intentos agotados. "
+            "Esto es el comportamiento esperado en escenario 2."
+        )
+]]></field>
+        </record>
+
+        <record id="action_server_1774" model="ir.actions.server">
+            <field name="name">Prueba califrais 2-3 min</field>
+            <field name="model_id" ref="purchase.model_purchase_order"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ============================================================
+# [DIAG3] Last backend attempt: try with sudo.
+# If the token is read from a field on res.users, running as
+# superuser might pull a different (possibly fresh) token.
+# ============================================================
+
+HARDCODED_ORDER_ID = 59163
+CONFIRMABLE_STATES = ("draft", "sent")
+
+order = env["purchase.order"].browse(HARDCODED_ORDER_ID).exists()
+
+if order and order.state in CONFIRMABLE_STATES:
+    # Same as before: switch to the order's company.
+    # Then ALSO sudo: run as superuser, which may have a different token.
+    order_to_confirm = order.with_company(order.company_id).sudo()
+
+    sp_name = "sp_diag3_" + str(order.id)
+    env.cr.execute("SAVEPOINT " + sp_name)
+
+    attempt_succeeded = False
+    last_error_msg = ""
+
+    try:
+        order_to_confirm.button_confirm()
+        attempt_succeeded = True
+    except Exception as err:
+        env.cr.execute("ROLLBACK TO SAVEPOINT " + sp_name)
+        order.invalidate_recordset()
+        last_error_msg = str(err)
+
+    diag = (
+        "<b>--- DIAG3: with_company + sudo ---</b><br/>"
+        "env.user original: " + str(env.user.name) + " (ID "
+        + str(env.user.id) + ")<br/>"
+        "env tras sudo: " + str(order_to_confirm.env.user.name)
+        + " (ID " + str(order_to_confirm.env.user.id) + ")<br/>"
+        "env.company tras sudo: " + str(order_to_confirm.env.company.name)
+        + " (ID " + str(order_to_confirm.env.company.id) + ")"
+    )
+
+    if attempt_succeeded:
+        env.cr.execute("RELEASE SAVEPOINT " + sp_name)
+        order.message_post(
+            body="<b>[DIAG3] EXITO con sudo</b><br/>" + diag,
+            body_is_html=True,
+        )
+    else:
+        order.message_post(
+            body="<b>[DIAG3] FALLO con sudo</b><br/>" + diag
+                 + "<br/><br/><b>Error:</b><br/><pre>"
+                 + last_error_msg + "</pre>",
+            body_is_html=True,
+        )]]></field>
+        </record>
+
+        <record id="action_server_1811" model="ir.actions.server">
+            <field name="name">Deliverect API snooze</field>
+            <field name="model_id" ref="product.model_product_product"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[COMPANY_ID      = 7
+DELIVERECT_ACCT = 6
+SNOOZE_HOURS    = 12
+
+product_ids = env.context.get("active_ids", [])
+
+if not product_ids:
+    raise UserError("ERROR: no se recibio ningun product_id")
+
+company = env["res.company"].browse(COMPANY_ID)
+account = env["deliverect.account"].sudo().browse(DELIVERECT_ACCT)
+pos     = env["deliverect.pos"].sudo().with_company(COMPANY_ID).search(
+              [("company_id", "=", COMPANY_ID)], limit=1)
+
+now        = datetime.datetime.utcnow()
+snooze_end = now + datetime.timedelta(hours=SNOOZE_HOURS)
+
+plus_as_strings = []
+for pid in product_ids:
+    plus_as_strings.append(str(pid))
+
+payload = {
+    "account":   account.account_id,
+    "location":  pos.location_id,
+    "plus":      plus_as_strings,
+    "snoozeEnd": snooze_end.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+}
+
+env["deliverect.api"].sudo().with_company(COMPANY_ID).post(
+    "/products/snoozeByPlus",
+    payload,
+    company=company
+)]]></field>
+            <field name="binding_model_id" ref="product.model_product_product"/>
+            <field name="binding_view_types">list,form</field>
+        </record>
+
+        <record id="action_server_1812" model="ir.actions.server">
+            <field name="name">Deliverect API unsnooze</field>
+            <field name="model_id" ref="product.model_product_product"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[COMPANY_ID      = 7
+DELIVERECT_ACCT = 6
+
+product_ids = env.context.get("active_ids", [])
+
+if not product_ids:
+    raise UserError("ERROR: no se recibio ningun product_id")
+
+company = env["res.company"].browse(COMPANY_ID)
+account = env["deliverect.account"].sudo().browse(DELIVERECT_ACCT)
+pos     = env["deliverect.pos"].sudo().with_company(COMPANY_ID).search(
+              [("company_id", "=", COMPANY_ID)], limit=1)
+
+now        = datetime.datetime.utcnow()
+snooze_end = now - datetime.timedelta(minutes=1)
+
+plus_as_strings = []
+for pid in product_ids:
+    plus_as_strings.append(str(pid))
+
+payload = {
+    "account":   account.account_id,
+    "location":  pos.location_id,
+    "plus":      plus_as_strings,
+    "snoozeEnd": snooze_end.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+}
+
+env["deliverect.api"].sudo().with_company(COMPANY_ID).post(
+    "/products/snoozeByPlus",
+    payload,
+    company=company
+)]]></field>
+            <field name="binding_model_id" ref="product.model_product_product"/>
+            <field name="binding_view_types">list,form</field>
+        </record>
+
+        <record id="action_server_1886" model="ir.actions.server">
+            <field name="name">accounr.journal</field>
+            <field name="model_id" ref="account.model_account_journal"/>
+            <field name="state">object_write</field>
+            <field name="binding_model_id" ref="account.model_account_journal"/>
+            <field name="crud_model_id" ref="account.model_account_journal"/>
+            <field name="update_field_id" ref="account.field_account_journal__default_account_id"/>
+            <field name="update_related_model_id" ref="account.model_account_account"/>
+            <field name="update_path">default_account_id</field>
+            <field name="update_m2m_operation">add</field>
+            <field name="update_boolean_value">true</field>
+            <field name="evaluation_type">value</field>
+            <field name="value">632</field>
+            <field name="binding_view_types">list,form</field>
+        </record>
+</odoo>

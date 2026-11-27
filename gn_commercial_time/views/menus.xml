@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="menu_1050" model="ir.ui.menu">
+            <field name="name">Commercial time</field>
+            <field name="parent_id" ref="sale_timesheet_enterprise.hr_timesheet_menu_configuration_settings"/>
+            <field name="sequence" eval="2"/>
+            <field name="active" eval="True"/>
+            <field name="action" ref="action_window_1756"/>
+        </record>
+</odoo>

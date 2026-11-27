@@ -1,0 +1,981 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <!-- Automatización (activa en prod: False) -->
+        <record id="automation_6" model="base.automation">
+            <field name="name">Solution State Survey</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="trigger">on_create_or_write</field>
+            <field name="active" eval="False"/>
+            <field name="filter_pre_domain">["&amp;", ("state", "=", "done"), ("x_studio_solution_state_1", "not in", ["completed"])]</field>
+            <field name="filter_domain">[("survey_id", "not in", [24])]</field>
+        </record>
+
+        <record id="action_server_1647" model="ir.actions.server">
+            <field name="name">Ejecutar el código Python</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="state">code</field>
+            <field name="usage">base_automation</field>
+            <field name="code"><![CDATA[# Available variables:
+#  - env, model, record, records, time, datetime, dateutil, timezone
+#  - float_compare, log, _logger, UserError, Command
+# =================================================================
+# Coherencia entre x_studio_solution_state_1, x_studio_fake y
+# x_studio_handled. Recalcula el estado del survey en función
+# de cuántas líneas relevantes están handled.
+#
+# TRIGGER: Al crear y actualizar
+# CAMPOS OBSERVADOS: x_studio_solution_state_1, user_input_line_ids
+# =================================================================
+
+# -------- CONSTANTES --------
+TARGET_QUESTION_IDS = (207, 265, 266)
+STATE_COMPLETED = 'completed'
+STATE_NEW = 'new'
+STATE_WIP = 'work in progress'
+STATES_OPEN = (STATE_NEW, STATE_WIP)
+SKIP_DISPLAY_NAME = "Omitida"
+
+# -------- CACHE LOCAL --------
+# Una sola lectura del recordset y del estado actual.
+lines = record.user_input_line_ids
+current_state = record.x_studio_solution_state_1
+
+# Líneas que cuentan para el cálculo de estado.
+# Nota: el filtro por display_name es frágil en multilingüe;
+# si traduces "Omitida" hay que ajustarlo (o migrar a un
+# booleano Studio explícito).
+relevant_lines = lines.filtered(
+    lambda l: not l.skipped and l.display_name != SKIP_DISPLAY_NAME
+)
+
+# -------- 1. SYNC fake -> handled --------
+# Si una línea está marcada como fake, también debe quedar handled.
+# Se dispara cuando se guardan cambios de líneas a través del padre,
+# gracias a que user_input_line_ids está en los watched fields.
+fake_pending = lines.filtered(
+    lambda l: l.x_studio_fake and not l.x_studio_handled
+)
+if fake_pending:
+    fake_pending.write({'x_studio_handled': True})
+
+# -------- 2. Si COMPLETED -> todo relevante queda handled --------
+if current_state == STATE_COMPLETED:
+    to_handle = relevant_lines.filtered(lambda l: not l.x_studio_handled)
+    if to_handle:
+        to_handle.write({'x_studio_handled': True})
+
+# -------- 3. Si NEW o WIP -> preguntas objetivo handled --------
+if current_state in STATES_OPEN:
+    target_pending = lines.filtered(
+        lambda l: l.question_id.id in TARGET_QUESTION_IDS
+        and not l.x_studio_handled
+    )
+    if target_pending:
+        target_pending.write({'x_studio_handled': True})
+
+# -------- 4. Recalcular estado según handled --------
+# Una sola pasada con sum() en vez de all() + any() separados.
+if relevant_lines:
+    total = len(relevant_lines)
+    handled_count = sum(1 for l in relevant_lines if l.x_studio_handled)
+
+    if handled_count == total:
+        new_state = STATE_COMPLETED
+    elif handled_count > 0:
+        new_state = STATE_WIP
+    else:
+        new_state = current_state  # sin cambio
+
+    # Change guard: solo escribir si el estado realmente cambia.
+    if new_state != current_state:
+        record.write({'x_studio_solution_state_1': new_state})]]></field>
+            <field name="base_automation_id" ref="automation_6"/>
+        </record>
+
+        <record id="action_server_1648" model="ir.actions.server">
+            <field name="name">Ejecutar el código Python</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="state">code</field>
+            <field name="usage">base_automation</field>
+            <field name="code"><![CDATA[# Available variables:
+#  - env: environment on which the action is triggered
+#  - model: model of the record on which the action is triggered; is a void recordset
+#  - record: record on which the action is triggered; may be void
+#  - records: recordset of all records on which the action is triggered in multi-mode; may be void
+#  - time, datetime, dateutil, timezone: useful Python libraries
+#  - float_compare: utility function to compare floats based on specific precision
+#  - log: log(message, level='info'): logging function to record debug information in ir.logging table
+#  - _logger: _logger.info(message): logger to emit messages in server logs
+#  - UserError: exception class for raising user-facing warning messages
+#  - Command: x2many commands namespace
+# To return an action, assign: action = {...}
+
+
+# Autor del chatter (buddy - usuario 171)
+author_partner = env['res.users'].browse(171).partner_id
+
+for record in records:
+    user = record.write_uid
+    user_name = user.name if user else "Unknown user"
+    state = record.x_studio_solution_state_1
+
+    if state not in ['work in progress', 'completed']:
+        continue
+
+    # Idioma del usuario que modifica
+    lang = user.lang if user and user.lang else 'en_US'
+
+    # Traducciones simples
+    if lang.startswith('es'):
+        message = f"El estado de la solución cambió a '{state}' por el usuario {user_name}"
+    elif lang.startswith('fr'):
+        message = f"L'état de la solution est passé à '{state}' par l'utilisateur {user_name}"
+    else:
+        message = f"Solution state changed to '{state}' by user {user_name}"
+
+    # Buscar último mensaje
+    last_message = env['mail.message'].search(
+        [
+            ('res_id', '=', record.id),
+            ('model', '=', record._name),
+            ('message_type', '=', 'comment'),
+        ],
+        order='date desc',
+        limit=1
+    )
+
+    if last_message and state in (last_message.body or ''):
+        continue
+
+    # Publicar mensaje en el idioma correcto
+    record.with_context(lang=lang).message_post(
+        body=message,
+        author_id=author_partner.id,
+        message_type="comment",
+        subtype_xmlid="mail.mt_note"
+    )
+]]></field>
+            <field name="base_automation_id" ref="automation_6"/>
+            <field name="sequence" eval="6"/>
+        </record>
+
+        <record id="action_server_1723" model="ir.actions.server">
+            <field name="name">Ver compras desde encuesta</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ════════════════════════════════════════════════════════════════════
+# COMPRAS DESDE ENCUESTA — Acción de servidor (production-ready)
+# ════════════════════════════════════════════════════════════════════
+# Modelo:   survey.user_input
+# Trigger:  botón "Ver / Crear compras" en la encuesta
+#
+# Flujo: por cada encuesta seleccionada lee el almacén del partner y
+# los productos respondidos, los clasifica contra POs en borrador del
+# mismo almacén y bifurca en 3 casos:
+#
+#   ┌──────────────────────────────┬──────────────────────────────────┐
+#   │ CASO                         │ COMPORTAMIENTO                   │
+#   ├──────────────────────────────┼──────────────────────────────────┤
+#   │ A · todos en PO draft        │ abre lista filtrada              │
+#   │ B · ninguno en PO            │ crea PO(s) agrupando proveedores │
+#   │ C · parcial (algunos sí)     │ auto-añade faltantes a la PO     │
+#   │                              │ existente y la abre              │
+#   └──────────────────────────────┴──────────────────────────────────┘
+#
+# Idempotencia:
+#   - CASO B y C verifican que no exista ya el producto antes de crear/añadir
+#   - Re-ejecutar la acción no duplica líneas
+#
+# Auditoría: chatter en la PO y en la encuesta para toda operación de
+# escritura. Campo `origin` con timestamp de finalización de la encuesta.
+# ════════════════════════════════════════════════════════════════════
+
+
+# ─────────────────────────────────────────────────────────────────────
+# CONSTANTES — single source of truth
+# ─────────────────────────────────────────────────────────────────────
+LIST_LIMIT     = 5            # límite de filas al abrir lista de POs
+DEFAULT_QTY    = 1.0          # cantidad inicial de líneas creadas
+INCOMING_CODE  = "incoming"   # stock.picking.type.code para recepciones
+ADDABLE_STATE  = "draft"      # único estado de PO al que se le añaden líneas
+DATE_FORMAT    = "%Y-%m-%d %H:%M"
+NO_PARTNER_TXT = "Sin contacto"
+NO_DATE_TXT    = "sin fecha"
+
+
+# ─────────────────────────────────────────────────────────────────────
+# HELPERS · notificaciones
+# ─────────────────────────────────────────────────────────────────────
+def notify(title, message, ntype="warning", sticky=False):
+    """Acción cliente: toast en la esquina superior derecha."""
+    return {
+        "type": "ir.actions.client",
+        "tag":  "display_notification",
+        "params": {
+            "title":   title,
+            "message": message,
+            "type":    ntype,
+            "sticky":  sticky,
+        },
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────
+# HELPERS · extracción de datos
+# ─────────────────────────────────────────────────────────────────────
+def get_products_from_input(user_input):
+    """Productos únicos respondidos en una encuesta (recordset)."""
+    products = env["product.product"]
+    for line in user_input.user_input_line_ids:
+        if "suggested_answer_ids" in line._fields:
+            answers = line.suggested_answer_ids
+        else:
+            answers = line.suggested_answer_id or env["survey.question.answer"]
+        products |= answers.mapped("x_studio_product_product_id")
+    return products
+
+
+def build_origin(source_record):
+    """
+    Texto para purchase.order.origin.
+    Formato: '<end_datetime local> - <partner_name>'
+    Ej.:     '2026-05-12 14:30 - Opera 14'
+    """
+    end_dt = source_record.end_datetime
+    if end_dt:
+        # end_datetime en BD es naive UTC. Convertimos a la zona horaria
+        # del usuario usando dateutil.tz (pytz/fields no están disponibles
+        # en safe_eval, pero dateutil sí).
+        user_tz_name = source_record.env.user.tz or "UTC"
+        utc_tz       = dateutil.tz.tzutc()
+        user_tz      = dateutil.tz.gettz(user_tz_name)
+        end_local    = end_dt.replace(tzinfo=utc_tz).astimezone(user_tz)
+        end_str      = end_local.strftime(DATE_FORMAT)
+    else:
+        end_str = NO_DATE_TXT
+
+    partner_name = source_record.partner_id.name or NO_PARTNER_TXT
+    return "%s - %s" % (end_str, partner_name)
+
+
+# ─────────────────────────────────────────────────────────────────────
+# HELPERS · clasificación de productos
+# ─────────────────────────────────────────────────────────────────────
+def split_matched_unmatched(warehouse, products):
+    """
+    Particiona `products` en (matched, unmatched) con UNA query.
+
+    matched   = aparece en ≥1 PO en estado draft del almacén dado.
+    unmatched = no aparece en ninguna PO draft (o solo en POs cerradas).
+
+    Una PO en `sent`/`purchase`/`done` NO cuenta como match porque ya no
+    se le pueden añadir líneas sin renegociar con el proveedor.
+    """
+    empty = env["product.product"]
+    if not products:
+        return empty, empty
+
+    groups = env["purchase.order.line"].read_group(
+        domain=[
+            ("product_id",                            "in", products.ids),
+            ("order_id.picking_type_id.warehouse_id", "=",  warehouse.id),
+            ("order_id.state",                        "=",  ADDABLE_STATE),
+        ],
+        fields=["product_id"],
+        groupby=["product_id"],
+    )
+    matched_ids = [g["product_id"][0] for g in groups]
+    matched     = products.filtered_domain([("id", "in", matched_ids)])
+    unmatched   = products - matched
+    return matched, unmatched
+
+
+# ─────────────────────────────────────────────────────────────────────
+# HELPERS · construcción de acciones de vista
+# ─────────────────────────────────────────────────────────────────────
+def build_search_domain(pairs):
+    """
+    Dominio OR para listar POs draft que toquen (almacén, productos).
+    `pairs` = [(warehouse, products_recordset), ...]
+    """
+    clauses = []
+    for warehouse, prods in pairs:
+        clauses += [
+            "&",
+            ("order_line.product_id",        "in", prods.ids),
+            ("picking_type_id.warehouse_id", "=",  warehouse.id),
+        ]
+    or_prefix = ["|"] * (len(pairs) - 1) if len(pairs) > 1 else []
+    return or_prefix + clauses + [("state", "=", ADDABLE_STATE)]
+
+
+def build_list_action(domain, name="Compras relacionadas"):
+    """Vista lista de purchase.order filtrada por dominio."""
+    return {
+        "type":      "ir.actions.act_window",
+        "name":      name,
+        "res_model": "purchase.order",
+        "views":     [[False, "list"], [False, "form"]],
+        "view_mode": "list,form",
+        "domain":    domain,
+        "context":   {"search_default_groupby_warehouse": 1},
+        "limit":     LIST_LIMIT,
+    }
+
+
+def build_po_view(po_ids, name_single, name_multi):
+    """
+    Decide entre form (1 PO) o lista (varias) para mostrar resultado.
+    Usado tras crear o actualizar POs.
+    """
+    if len(po_ids) == 1:
+        return {
+            "type":      "ir.actions.act_window",
+            "name":      name_single,
+            "res_model": "purchase.order",
+            "res_id":    po_ids[0],
+            "views":     [[False, "form"]],
+            "view_mode": "form",
+        }
+    return {
+        "type":      "ir.actions.act_window",
+        "name":      name_multi,
+        "res_model": "purchase.order",
+        "domain":    [("id", "in", po_ids)],
+        "views":     [[False, "list"], [False, "form"]],
+        "view_mode": "list,form",
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────
+# HELPERS · creación / modificación de POs
+# ─────────────────────────────────────────────────────────────────────
+def create_pos_from_products(warehouse, products, source_record):
+    """
+    Crea una PO por proveedor preferido.
+
+    Jerarquía para decidir el proveedor de cada producto:
+      1. stock.warehouse.orderpoint del almacén → supplier_id
+         (la regla de reabastecimiento manda; resuelve el caso de
+          productos con varios proveedores en la ficha)
+      2. Fallback: product.seller_ids[:1] (primer proveedor por sequence)
+      3. Sin ninguno → no_supplier, reportado al caller
+
+    Devuelve (created_pos_recordset, products_without_supplier_recordset).
+    """
+    picking_type = env["stock.picking.type"].search(
+        [
+            ("warehouse_id", "=", warehouse.id),
+            ("code",         "=", INCOMING_CODE),
+        ],
+        limit=1,
+    )
+
+    # ─── Mapa producto → partner_id según orderpoint del almacén ───
+    # Una sola query para todos los productos (más barato que N searches).
+    orderpoints = env["stock.warehouse.orderpoint"].search([
+        ("product_id",   "in", products.ids),
+        ("warehouse_id", "=",  warehouse.id),
+        ("supplier_id",  "!=", False),
+    ])
+    op_supplier_by_product = {}                # {product_id: partner_id}
+    for op in orderpoints:
+        # Si un producto tiene varios orderpoints (raro), el primero gana.
+        # En la práctica el orderpoint es único por (producto, almacén).
+        if op.product_id.id not in op_supplier_by_product:
+            op_supplier_by_product[op.product_id.id] = op.supplier_id.partner_id.id
+
+    # ─── Agrupar productos por proveedor resuelto ───
+    by_supplier = {}                           # {supplier_id: recordset}
+    no_supplier = env["product.product"]
+
+    for product in products:
+        # 1º intentar regla de reabastecimiento
+        supplier_id = op_supplier_by_product.get(product.id)
+
+        # 2º fallback a seller_ids
+        if not supplier_id:
+            seller = product.seller_ids[:1]
+            if not seller:
+                no_supplier |= product
+                continue
+            supplier_id = seller.partner_id.id
+
+        if supplier_id not in by_supplier:
+            by_supplier[supplier_id] = env["product.product"]
+        by_supplier[supplier_id] |= product
+
+    # ─── Crear una PO por proveedor ───
+    created_pos = env["purchase.order"]
+    origin      = build_origin(source_record)
+
+    for supplier_id, prods in by_supplier.items():
+        line_commands = [
+            (0, 0, {"product_id": p.id, "product_qty": DEFAULT_QTY})
+            for p in prods
+        ]
+        po_vals = {
+            "partner_id": supplier_id,
+            "order_line": line_commands,
+            "origin":     origin,
+        }
+        if picking_type:
+            po_vals["picking_type_id"] = picking_type.id
+
+        po    = env["purchase.order"].create(po_vals)
+        names = ", ".join(prods.mapped("display_name"))
+
+        po.message_post(
+            body="Compra creada desde encuesta. Productos: %s" % names
+        )
+        source_record.message_post(
+            body="Compra %s creada con productos: %s" % (po.name, names)
+        )
+        created_pos |= po
+
+    return created_pos, no_supplier
+
+def add_products_to_po(po, products_to_check, source_record):
+    """
+    Añade a `po` los productos de `products_to_check` que NO estén ya
+    en sus líneas. Devuelve el recordset realmente añadido (puede ser
+    vacío si ya estaban todos).
+
+    Idempotente: re-ejecutar no duplica líneas.
+    """
+    existing_ids    = po.order_line.mapped("product_id").ids
+    products_to_add = products_to_check.filtered_domain(
+        [("id", "not in", existing_ids)]
+    )
+
+    if not products_to_add:
+        return products_to_add  # recordset vacío
+
+    new_lines = [
+        (0, 0, {"product_id": p.id, "product_qty": DEFAULT_QTY})
+        for p in products_to_add
+    ]
+    po.write({"order_line": new_lines})
+
+    names = ", ".join(products_to_add.mapped("display_name"))
+    po.message_post(
+        body="Productos agregados desde encuesta: %s" % names
+    )
+    source_record.message_post(
+        body="Productos agregados a %s: %s" % (po.name, names)
+    )
+    return products_to_add
+
+
+# ═════════════════════════════════════════════════════════════════════
+# FLUJO PRINCIPAL
+# ═════════════════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────────────────────
+# 1 · Validación temprana
+# ─────────────────────────────────────────────────────────────────────
+if not records:
+    action = notify("Sin registros", "No hay encuestas seleccionadas.")
+
+else:
+    # ─────────────────────────────────────────────────────────────────
+    # 2 · Clasificar cada encuesta — una pasada, una query por encuesta
+    # ─────────────────────────────────────────────────────────────────
+    errors      = []   # (record, motivo)  → reportar por chatter
+    valid_pairs = []   # dicts con datos clasificados
+
+    for record in records:
+        partner   = record.partner_id
+        warehouse = partner.x_studio_warehouse_id
+
+        if not warehouse:
+            errors.append((record, "sin almacén asignado"))
+            continue
+
+        products = get_products_from_input(record)
+        if not products:
+            errors.append((record, "sin productos en las respuestas"))
+            continue
+
+        matched, unmatched = split_matched_unmatched(warehouse, products)
+
+        valid_pairs.append({
+            "warehouse": warehouse,
+            "products":  products,
+            "matched":   matched,
+            "unmatched": unmatched,
+            "record":    record,
+        })
+
+    # ─────────────────────────────────────────────────────────────────
+    # 3 · Resolver según el diagnóstico
+    # ─────────────────────────────────────────────────────────────────
+    if not valid_pairs:
+        # Ningún registro válido — listar motivos en popup
+        lines = [
+            "• %s: %s." % (r.partner_id.name or NO_PARTNER_TXT, msg)
+            for r, msg in errors
+        ]
+        action = notify(
+            "No se pudo procesar ninguna encuesta",
+            "\n".join(lines),
+            ntype="danger",
+            sticky=True,
+        )
+
+    else:
+        # Reportar fallos parciales en su propio chatter
+        for record, msg in errors:
+            record.message_post(
+                body="⚠️ No se pudieron abrir compras: %s." % msg
+            )
+
+        # Diagnóstico agregado para decidir el caso
+        has_any_matched   = any(p["matched"]   for p in valid_pairs)
+        has_any_unmatched = any(p["unmatched"] for p in valid_pairs)
+
+        # ─── CASO A · todos los productos tienen PO draft ─────────────
+        if not has_any_unmatched:
+            domain = build_search_domain(
+                [(p["warehouse"], p["products"]) for p in valid_pairs]
+            )
+            action = build_list_action(domain)
+
+        # ─── CASO B · ningún producto tiene PO → crear desde cero ─────
+        elif not has_any_matched:
+            created_pos = env["purchase.order"]
+
+            for pair in valid_pairs:
+                pos, no_supp = create_pos_from_products(
+                    pair["warehouse"], pair["products"], pair["record"]
+                )
+                created_pos |= pos
+
+                if no_supp:
+                    names = ", ".join(no_supp.mapped("display_name"))
+                    pair["record"].message_post(
+                        body="⚠️ Productos sin proveedor configurado "
+                             "(ni en regla de reabastecimiento ni en ficha, "
+                             "no incluidos en compra): %s" % names
+                    )
+
+            if not created_pos:
+                action = notify(
+                    "Sin compras creadas",
+                    "Ningún producto tiene proveedor configurado. "
+                    "Define proveedor en la regla de reabastecimiento "
+                    "del almacén o en la pestaña Compra del producto.",
+                    ntype="danger",
+                    sticky=True,
+                )
+            else:
+                action = build_po_view(
+                    created_pos.ids,
+                    name_single="Nueva compra",
+                    name_multi ="Nuevas compras",
+                )
+
+        # ─── CASO C · parcial → auto-añadir faltantes a PO existente ──
+        else:
+            affected_po_ids = []
+            has_ambiguous   = False
+
+            for pair in valid_pairs:
+                if not pair["unmatched"]:
+                    continue  # esta encuesta está completa, nada que hacer
+
+                # Localizar la PO destino. Si hay 0 o más de 1 → ambigüedad
+                matching_pos = env["purchase.order"].search([
+                    ("state",                          "=",  ADDABLE_STATE),
+                    ("picking_type_id.warehouse_id",   "=",  pair["warehouse"].id),
+                    ("order_line.product_id",          "in", pair["matched"].ids),
+                ])
+
+                if len(matching_pos) != 1:
+                    has_ambiguous = True
+                    continue
+
+                po    = matching_pos
+                added = add_products_to_po(po, pair["unmatched"], pair["record"])
+
+                # Registrar la PO afectada aunque `added` esté vacío
+                # (puede pasar tras un doble click → idempotencia)
+                if po.id not in affected_po_ids:
+                    affected_po_ids.append(po.id)
+
+            # Decidir vista de salida
+            if has_ambiguous:
+                # Resolución manual: lista filtrada
+                pairs_for_list = [
+                    (p["warehouse"], p["matched"])
+                    for p in valid_pairs
+                    if p["matched"]
+                ]
+                action = build_list_action(build_search_domain(pairs_for_list))
+
+            elif affected_po_ids:
+                action = build_po_view(
+                    affected_po_ids,
+                    name_single="Compra actualizada",
+                    name_multi ="Compras actualizadas",
+                )
+
+            else:
+                action = notify(
+                    "Sin cambios",
+                    "Los productos ya estaban en la compra.",
+                    ntype="info",
+                )]]></field>
+            <field name="binding_model_id" ref="survey.model_survey_user_input"/>
+            <field name="binding_view_types">list,form</field>
+        </record>
+
+        <record id="action_server_1724" model="ir.actions.server">
+            <field name="name">Ver movimientos stock desde encuesta</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# Available variables:
+#  - env: environment on which the action is triggered
+#  - model: model of the record on which the action is triggered; is a void recordset
+#  - record: record on which the action is triggered; may be void
+#  - records: recordset of all records on which the action is triggered in multi-mode; may be void
+#  - time, datetime, dateutil, timezone: useful Python libraries
+#  - float_compare: utility function to compare floats based on specific precision
+#  - log: log(message, level='info'): logging function to record debug information in ir.logging table
+#  - _logger: _logger.info(message): logger to emit messages in server logs
+#  - UserError: exception class for raising user-facing warning messages
+#  - Command: x2many commands namespace
+# To return an action, assign: action = {...}
+# Obtener el registro
+record = records[0]
+
+action = None
+
+# Partner que respondió
+partner = record.partner_id
+
+# Almacén asignado al partner
+warehouse = partner.x_studio_warehouse_id
+
+if not warehouse:
+    action = {
+        "type": "ir.actions.client",
+        "tag": "display_notification",
+        "params": {
+            "title": "Sin almacén",
+            "message": "Este contacto no tiene almacén asignado.",
+            "type": "warning",
+        },
+    }
+
+else:
+    # Ubicación del almacén
+    location = warehouse.lot_stock_id
+
+    # ----------------------------
+    # Productos elegidos en encuesta
+    # ----------------------------
+    products = env["product.product"]
+
+    for line in record.user_input_line_ids:
+
+        if "suggested_answer_ids" in line._fields:
+            answers = line.suggested_answer_ids
+        else:
+            answers = line.suggested_answer_id or env["survey.question.answer"]
+
+        products |= answers.mapped("x_studio_product_product_id")
+
+    if not products:
+        action = {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Sin producto",
+                "message": "No hay productos vinculados a las respuestas.",
+                "type": "warning",
+            },
+        }
+
+    else:
+        # ----------------------------
+        # Solo últimos 15 días
+        # ----------------------------
+        date_limit = datetime.datetime.now() - dateutil.relativedelta.relativedelta(days=15)
+
+        # Transferencias / recepciones hacia esa ubicación con esos productos
+        action = {
+            "type": "ir.actions.act_window",
+            "name": "Transferencias relacionadas",
+            "res_model": "stock.picking",
+            "view_mode": "tree,form",
+            "domain": [
+                ("move_ids_without_package.product_id", "in", products.ids),
+                ("location_dest_id", "child_of", location.id),
+                ("state", "not in", ["cancel", "done"]),
+                ("scheduled_date", ">=", date_limit),
+            ],
+        }
+
+
+
+]]></field>
+            <field name="binding_model_id" ref="survey.model_survey_user_input"/>
+            <field name="binding_view_types">list,form</field>
+        </record>
+
+        <record id="action_server_1725" model="ir.actions.server">
+            <field name="name">Ver stock desde encuesta</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# Available variables:
+#  - env: environment on which the action is triggered
+#  - model: model of the record on which the action is triggered; is a void recordset
+#  - record: record on which the action is triggered; may be void
+#  - records: recordset of all records on which the action is triggered in multi-mode; may be void
+#  - time, datetime, dateutil, timezone: useful Python libraries
+#  - float_compare: utility function to compare floats based on specific precision
+#  - log: log(message, level='info'): logging function to record debug information in ir.logging table
+#  - _logger: _logger.info(message): logger to emit messages in server logs
+#  - UserError: exception class for raising user-facing warning messages
+#  - Command: x2many commands namespace
+# To return an action, assign: action = {...}
+
+# Obtener el registro
+record = records[0]
+
+action = None
+
+# Partner que respondió
+partner = record.partner_id
+
+# Almacén asignado al partner
+warehouse = partner.x_studio_warehouse_id
+
+if not warehouse:
+    action = {
+        "type": "ir.actions.client",
+        "tag": "display_notification",
+        "params": {
+            "title": "Sin almacén",
+            "message": "Este contacto no tiene almacén asignado.",
+            "type": "warning",
+        },
+    }
+
+else:
+    # Ubicación del almacén
+    location = warehouse.lot_stock_id
+
+    # ----------------------------
+    # Productos elegidos en encuesta
+    # ----------------------------
+    products = env["product.product"]
+
+    for line in record.user_input_line_ids:
+
+        # Si existe el campo de respuestas múltiples
+        if "suggested_answer_ids" in line._fields:
+            answers = line.suggested_answer_ids
+        else:
+            # Si es respuesta simple (una línea por opción)
+            answers = line.suggested_answer_id or env["survey.question.answer"]
+
+        products |= answers.mapped("x_studio_product_product_id")
+
+    # Sin productos vinculados
+    if not products:
+        action = {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Sin producto",
+                "message": "No hay productos vinculados a las respuestas.",
+                "type": "warning",
+            },
+        }
+    else:
+        # Abrir quants filtrados
+        action = {
+            "type": "ir.actions.act_window",
+            "name": "Stock del punto de venta",
+            "res_model": "stock.quant",
+            "view_mode": "tree,form",
+            "domain": [
+                ("product_id", "in", products.ids),
+                ("location_id", "child_of", location.id),
+            ],
+        }
+
+
+]]></field>
+            <field name="binding_model_id" ref="survey.model_survey_user_input"/>
+            <field name="binding_view_types">list,form</field>
+        </record>
+
+        <record id="action_server_1732" model="ir.actions.server">
+            <field name="name">Compras Amazon</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ============================================================
+# Constants (single source of truth)
+# ------------------------------------------------------------
+# NOTE: Hardcoded record IDs are fragile across DB instances.
+# If you ever migrate or duplicate this DB, replace these with
+# env.ref(...) lookups via a stable XML ID or external reference.
+# ============================================================
+SUPPLIER_PARTNER_ID     = 5376         # res.partner: Amazon (proveedor fijo)
+DELIVERY_QUESTION_ID    = 283          # survey.question: pregunta de entrega
+SURVEY_COMPLETED_STATE  = 'completed'  # x_studio_solution_state_1 final
+ORIGIN_PREFIX           = 'Survey '
+
+# ============================================================
+# Pre-checks: idempotency guard
+# Avoid duplicating POs if the action is re-run on the same set.
+# ============================================================
+already_created = records.filtered(lambda r: r.x_studio_purchase_order)
+if already_created:
+    raise UserError(
+        "Purchase order already created for record(s): %s"
+        % already_created.ids
+    )
+
+# ============================================================
+# Batch partner -> user lookup (avoids N+1 queries inside loop)
+# ============================================================
+partner_ids = records.mapped('partner_id').ids
+users = env['res.users'].search([('partner_id', 'in', partner_ids)])
+user_by_partner = {u.partner_id.id: u for u in users}
+
+# ============================================================
+# Main loop: one PO per survey input
+# ============================================================
+for record in records:
+    survey         = record.survey_id
+    user           = user_by_partner.get(record.partner_id.id)
+    picking_type   = False
+    delivery_answer = ''
+    survey_summary = []
+
+    # --- Single pass over input lines ---
+    for line in record.user_input_line_ids:
+        # Resolve the display value for this line
+        if line.suggested_answer_id:
+            answer_value = line.suggested_answer_id.value
+        elif line.value_char_box:
+            answer_value = line.value_char_box
+        elif line.value_text_box:
+            answer_value = line.value_text_box
+        elif line.value_numerical_box not in (False, None):
+            answer_value = str(line.value_numerical_box)
+        elif line.value_date:
+            answer_value = str(line.value_date)
+        else:
+            answer_value = ''
+
+        # Capture the delivery-question answer (first match wins)
+        if (
+            not delivery_answer
+            and line.question_id
+            and line.question_id.id == DELIVERY_QUESTION_ID
+        ):
+            delivery_answer = answer_value
+
+        # Capture picking type from suggested answer (first match wins)
+        if (
+            not picking_type
+            and line.suggested_answer_id
+            and line.suggested_answer_id.x_studio_delivery_address
+        ):
+            picking_type = line.suggested_answer_id.x_studio_delivery_address
+
+        # Build human-readable summary line
+        question_label = line.question_id.title if line.question_id else ''
+        if question_label and answer_value:
+            survey_summary.append('%s: %s' % (question_label, answer_value))
+
+    # --- Build PO values ---
+    company      = picking_type.company_id if picking_type else env.company
+    origin_parts = [ORIGIN_PREFIX + str(record.id), survey.title]
+    if delivery_answer:
+        origin_parts.append(delivery_answer)
+
+    po_vals = {
+        'partner_id': SUPPLIER_PARTNER_ID,
+        'origin':     ' - '.join(p for p in origin_parts if p),
+    }
+    if user:
+        po_vals['user_id'] = user.id
+    if picking_type:
+        po_vals['picking_type_id'] = picking_type.id
+        po_vals['company_id']      = company.id
+
+    # --- Create PO ---
+    po = env['purchase.order'].with_company(company).create(po_vals)
+
+    # --- Update survey record: link PO and mark as completed ---
+    record.write({
+        'x_studio_purchase_order':    po.id,
+        'x_studio_solution_state_1':  SURVEY_COMPLETED_STATE,
+    })
+
+    # --- Post traceability messages ---
+    author_partner_id = (
+        survey.user_id.partner_id.id if survey.user_id
+        else env.user.partner_id.id
+    )
+
+    record.message_post(
+        body='Purchase Order created: ' + po.name,
+        author_id=author_partner_id,
+    )
+
+    if survey_summary:
+        lines_text = '\n'.join(survey_summary)
+        po.message_post(
+            body='Survey: ' + survey.title + '\n' + lines_text,
+            author_id=author_partner_id,
+            message_type='comment',
+            subtype_xmlid='mail.mt_note',
+        )]]></field>
+            <field name="binding_model_id" ref="survey.model_survey_user_input"/>
+            <field name="binding_view_types">list,form</field>
+        </record>
+
+        <record id="action_server_1771" model="ir.actions.server">
+            <field name="name">Generar compras amazon encuestas HQ</field>
+            <field name="model_id" ref="survey.model_survey_user_input"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ============================================================
+# Constants (single source of truth)
+# ============================================================
+SERVER_ACTION_ID = 1732
+TARGET_SURVEY_ID = 24    # survey.survey: "Compras Amazon"
+BATCH_LIMIT      = 100   # max records processed per tick (safety cap)
+
+# ============================================================
+# Find surveys ready to be turned into Purchase Orders:
+#   - belong to the target survey (Compras Amazon, id=24)
+#   - user finished filling the survey
+#   - no Purchase Order linked yet
+#   - survey state is not 'completed'
+# ============================================================
+pending = env['survey.user_input'].search(
+    [
+        ('survey_id',                 '=',  TARGET_SURVEY_ID),
+        ('state',                     '=',  'done'),
+        ('x_studio_purchase_order',   '=',  False),
+        ('x_studio_solution_state_1', '!=', 'completed'),
+    ],
+    limit=BATCH_LIMIT,
+)
+
+# Nothing to do this tick — skip silently
+if pending:
+    env['ir.actions.server'].browse(SERVER_ACTION_ID).with_context(
+        active_model='survey.user_input',
+        active_ids=pending.ids,
+        active_id=pending[:1].id,
+    ).run()]]></field>
+        </record>
+</odoo>
