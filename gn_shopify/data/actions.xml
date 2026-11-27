@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="action_server_1758" model="ir.actions.server">
+            <field name="name">Validar ordenes de entrega shopify barcelona</field>
+            <field name="model_id" ref="stock.model_stock_picking"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ============================================================
+# Acción planificada: validación automática pickings tipo 346
+# Odoo 17 — compatible con safe_eval (sin `with`, sin STORE_ATTR)
+# ============================================================
+
+PICKING_TYPE_ID = 346
+LOOKBACK_HOURS  = 24
+MAX_PICKINGS    = 100
+
+start_date = datetime.datetime.utcnow() - dateutil.relativedelta.relativedelta(hours=LOOKBACK_HOURS)
+
+domain = [
+    ('picking_type_id', '=', PICKING_TYPE_ID),
+    ('state', 'in', ('confirmed', 'assigned')),
+    ('create_date', '>=', start_date),
+]
+
+Picking  = env['stock.picking'].sudo()
+MoveLine = env['stock.move.line'].sudo()
+pickings = Picking.search(domain, order='create_date asc, id asc', limit=MAX_PICKINGS)
+
+log("=== PICKINGS ENCONTRADOS: %d ===" % len(pickings))
+
+# Reserva en lote (1 sola llamada para todos los 'confirmed')
+to_assign = pickings.filtered(lambda p: p.state == 'confirmed')
+if to_assign:
+    to_assign.action_assign()
+
+ok = 0
+fail = 0
+
+for picking in pickings:
+    name = picking.name
+    sp = "sp_pick_%d" % picking.id          # nombre único por picking
+    env.cr.execute("SAVEPOINT %s" % sp)
+
+    try:
+        # ---- 1. Forzar cantidad realizada = demanda ----
+        new_lines = []
+        for move in picking.move_ids:
+            demand = move.product_uom_qty or 0.0
+            if demand <= 0:
+                continue
+
+            if not move.move_line_ids:
+                new_lines.append({
+                    'move_id'         : move.id,
+                    'picking_id'      : picking.id,
+                    'product_id'      : move.product_id.id,
+                    'product_uom_id'  : move.product_uom.id,
+                    'location_id'     : move.location_id.id,
+                    'location_dest_id': move.location_dest_id.id,
+                    'quantity'        : demand,
+                })
+            else:
+                # Concentrar la demanda en la primera línea, resto a 0
+                # (sin asignación directa de atributo: usamos write)
+                lines = move.move_line_ids
+                first = lines[0]
+                rest  = lines[1:]
+                if first.quantity != demand:
+                    first.write({'quantity': demand})
+                if rest:
+                    rest.write({'quantity': 0.0})
+
+        if new_lines:
+            MoveLine.create(new_lines)
+
+        # ---- 2. Validar ----
+        res = picking.with_context(skip_sms=True).button_validate()
+
+        # ---- 3. Dispatcher genérico de wizards ----
+        if isinstance(res, dict) and res.get('res_model') and res.get('res_id'):
+            wiz = env[res['res_model']].sudo().browse(res['res_id'])
+            if hasattr(wiz, 'process'):
+                wiz.with_context(skip_sms=True).process()
+            elif hasattr(wiz, 'button_validate'):
+                wiz.with_context(skip_sms=True).button_validate()
+
+        # ---- 4. Auditar ----
+        picking.invalidate_recordset(['state'])
+        if picking.state == 'done':
+            picking.message_post(body="✅ Validación automática completada (cantidad = demanda).")
+            log("[%s] VALIDADO" % name)
+            ok += 1
+        else:
+            picking.message_post(body="⚠️ No completado. Estado final: %s" % picking.state)
+            log("[%s] NO VALIDADO | Estado: %s" % (name, picking.state), level='warning')
+            fail += 1
+
+        env.cr.execute("RELEASE SAVEPOINT %s" % sp)
+
+    except Exception as e:
+        # Rollback del bloque y seguir con el siguiente picking
+        env.cr.execute("ROLLBACK TO SAVEPOINT %s" % sp)
+        env.cr.execute("RELEASE SAVEPOINT %s" % sp)
+        fail += 1
+        log("[%s] ERROR: %s" % (name, e), level='error')
+        try:
+            picking.sudo().message_post(body="❌ Error en validación automática: %s" % e)
+        except Exception as post_err:
+            log("[%s] message_post falló: %s" % (name, post_err), level='error')
+
+log("=== RESUMEN: %d OK | %d FAIL ===" % (ok, fail))]]></field>
+        </record>
+</odoo>

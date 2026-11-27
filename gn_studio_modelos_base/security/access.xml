@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="access_2006" model="ir.model.access">
+            <field name="name">(BPP) - Banco Prevsion de Pago group_system</field>
+            <field name="model_id" ref="model_x_bpp_banco_prevsion_d"/>
+            <field name="group_id" ref="base.group_system"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="access_2007" model="ir.model.access">
+            <field name="name">(BPP) - Banco Prevsion de Pago group_user</field>
+            <field name="model_id" ref="model_x_bpp_banco_prevsion_d"/>
+            <field name="group_id" ref="base.group_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="access_2008" model="ir.model.access">
+            <field name="name">(BPP) - Banco Prevsion de Pago Tags group_system</field>
+            <field name="model_id" ref="model_x_bpp_banco_prevsion_d_tag"/>
+            <field name="group_id" ref="base.group_system"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="access_2009" model="ir.model.access">
+            <field name="name">(BPP) - Banco Prevsion de Pago Tags group_user</field>
+            <field name="model_id" ref="model_x_bpp_banco_prevsion_d_tag"/>
+            <field name="group_id" ref="base.group_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="access_2234" model="ir.model.access">
+            <field name="name">survey_user_input_line group_system</field>
+            <field name="model_id" ref="model_x_survey_user_input_line_93926"/>
+            <field name="group_id" ref="base.group_system"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="access_2235" model="ir.model.access">
+            <field name="name">survey_user_input_line group_user</field>
+            <field name="model_id" ref="model_x_survey_user_input_line_93926"/>
+            <field name="group_id" ref="base.group_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="active" eval="True"/>
+        </record>
+</odoo>

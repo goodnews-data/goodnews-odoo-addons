@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="action_server_1757" model="ir.actions.server">
+            <field name="name">Get Commercial Times (POS Sessions Widget)</field>
+            <field name="model_id" ref="gn_commercial_time_base.model_x_commercial_time"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# Server action: expone reglas de x_commercial_time + configs de pos.config
+# bypassando la ir.rule de pos.config para que los cajeros restringidos
+# vean horarios y filtro de ciudad de toda su compañía.
+
+allowed_company_ids = env.context.get("allowed_company_ids") or env.companies.ids
+
+# 1) Reglas de horario comercial con sudo (bypass ir.rule en el m2m)
+rules = env["x_commercial_time"].sudo().search_read(
+    domain=[],
+    fields=[
+        "x_studio_pdv",
+        "x_studio_opening",
+        "x_studio_closing",
+        "x_studio_tolerance_min",
+        "x_studio_day_type",
+        "x_studio_shift_type",
+    ],
+    limit=500,
+)
+
+# 2) PDVs de las compañías permitidas con sudo (bypass ir.rule pos.config)
+configs = env["pos.config"].sudo().search_read(
+    domain=[("company_id", "in", allowed_company_ids)],
+    fields=["id", "name", "city_id", "company_id"],
+    limit=500,
+)
+allowed_config_ids = set([c["id"] for c in configs])
+
+# 3) Filtra reglas a PDVs visibles + serializa datetimes y selections
+filtered_rules = []
+for r in rules:
+    pdv_ids = r.get("x_studio_pdv") or []
+    visible_pdvs = [pid for pid in pdv_ids if pid in allowed_config_ids]
+    if not visible_pdvs:
+        continue
+    r["x_studio_pdv"] = visible_pdvs
+
+    for k in ("x_studio_opening", "x_studio_closing"):
+        v = r.get(k)
+        if isinstance(v, datetime.datetime):
+            r[k] = v.strftime("%Y-%m-%d %H:%M:%S")
+        elif isinstance(v, datetime.date):
+            r[k] = v.strftime("%Y-%m-%d")
+
+    for k in ("x_studio_day_type", "x_studio_shift_type"):
+        v = r.get(k)
+        if isinstance(v, list) or isinstance(v, tuple):
+            r[k] = v[0] if v else False
+
+    filtered_rules.append(r)
+
+action = {
+    "type": "ir.actions.act_window_close",
+    "infos": {
+        "rules": filtered_rules,
+        "configs": configs,
+    },
+}]]></field>
+            <field name="binding_model_id" ref="gn_commercial_time_base.model_x_commercial_time"/>
+            <field name="binding_view_types">list,form</field>
+        </record>
+
+        <record id="action_window_1756" model="ir.actions.act_window">
+            <field name="name">Commercial time</field>
+            <field name="res_model">x_commercial_time</field>
+            <field name="view_mode">tree,form</field>
+            <field name="binding_view_types">list,form</field>
+            <field name="help" type="html"><p class="o_view_nocontent_smiling_face">
+                    Esta es tu nueva acción.
+                </p>
+                <p>Por defecto, contiene una lista y una vista de formulario y posiblemente
+                    otros tipos de vista dependiendo de las opciones que hayas elegido para tu modelo.
+                </p>
+                <p>
+                    Puede empezar a personalizar estas pantallas haciendo clic en el icono de Studio en la
+                    esquina superior derecha (también puede personalizar este mensaje de ayuda allí).
+                </p>
+            </field>
+        </record>
+</odoo>

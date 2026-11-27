@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="view_6260" model="ir.ui.view">
+            <field name="name">Default list view for x_commercial_time</field>
+            <field name="model">x_commercial_time</field>
+            <field name="type">tree</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><tree>
+  <field name="x_studio_sequence" widget="handle"/>
+  <field name="x_name"/>
+</tree></field>
+        </record>
+
+        <record id="view_6261" model="ir.ui.view">
+            <field name="name">Default form view for x_commercial_time</field>
+            <field name="model">x_commercial_time</field>
+            <field name="type">form</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><form>
+  <header/>
+  <sheet string="Commercial time">
+    <widget name="web_ribbon" text="Archivado" bg_color="text-bg-danger" invisible="x_active"/>
+    <field name="x_active" invisible="1"/>
+    <div class="oe_title">
+                <h1>
+                    <field name="x_name" required="1" placeholder="Name..."/>
+                </h1>
+            </div>
+    <group name="studio_group_5cfc85">
+      <group name="studio_group_5cfc85_left"/>
+      <group name="studio_group_5cfc85_right"/>
+    </group>
+  </sheet>
+  <div class="oe_chatter" name="oe_chatter">
+    <field name="message_follower_ids"/>
+    <field name="message_ids"/>
+    <field name="activity_ids"/>
+  </div>
+</form></field>
+        </record>
+
+        <record id="view_6262" model="ir.ui.view">
+            <field name="name">Default search view for x_commercial_time</field>
+            <field name="model">x_commercial_time</field>
+            <field name="type">search</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><search>
+  <field name="x_name"/>
+  <separator/>
+  <filter string="Archivado" name="archived_x_commercial_time" domain="[['x_active', '=', False]]"/>
+  <separator/>
+</search></field>
+        </record>
+
+        <record id="view_6263" model="ir.ui.view">
+            <field name="name">Odoo Studio: Default form view for x_commercial_time customization</field>
+            <field name="model">x_commercial_time</field>
+            <field name="inherit_id" ref="view_6261"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//group[@name='studio_group_5cfc85_left']" position="inside">
+    <field name="x_studio_pdv" widget="many2many_tags" options="{&quot;no_create&quot;:true}"/>
+    <field widget="many2many_tags" name="x_studio_city" options="{&quot;no_create&quot;:true}"/>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_5cfc85_right']" position="inside">
+    <field name="x_studio_shift_type"/>
+    <field name="x_studio_opening" invisible="False"/>
+    <field name="x_studio_closing" invisible="False"/>
+    <field name="x_studio_tolerance_min"/>
+    <field name="x_studio_day_type"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6264" model="ir.ui.view">
+            <field name="name">Odoo Studio: Default list view for x_commercial_time customization</field>
+            <field name="model">x_commercial_time</field>
+            <field name="inherit_id" ref="view_6260"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//tree[1]" position="attributes">
+    <attribute name="default_group_by">x_studio_shift_type</attribute>
+  </xpath>
+  <xpath expr="//field[@name='x_studio_sequence']" position="after">
+    <field name="x_studio_city" optional="show" widget="many2many_tags" options="{&quot;no_create&quot;:true}"/>
+  </xpath>
+  <xpath expr="//field[@name='x_name']" position="after">
+    <field name="x_studio_opening" optional="show"/>
+    <field name="x_studio_closing" optional="show"/>
+    <field name="x_studio_day_type" optional="show"/>
+    <field name="x_studio_shift_type" optional="show"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6265" model="ir.ui.view">
+            <field name="name">Odoo Studio: Default search view for x_commercial_time customization</field>
+            <field name="model">x_commercial_time</field>
+            <field name="inherit_id" ref="view_6262"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='x_name']" position="after">
+    <field name="x_studio_city"/>
+  </xpath>
+  <xpath expr="//filter[@name='archived_x_commercial_time']" position="after">
+    <filter domain="[(&quot;x_studio_city&quot;, &quot;in&quot;, [1])]" name="studio_filter_9ep_1jna84ac2" string="Barcelona"/>
+    <filter domain="[(&quot;x_studio_city&quot;, &quot;in&quot;, [2])]" name="studio_filter_4b8_1jna84lju" string="Madrid"/>
+    <filter domain="[(&quot;x_studio_city&quot;, &quot;in&quot;, [3])]" name="studio_filter_5ro_1jna85346" string="París"/>
+    <filter domain="[(&quot;x_studio_city&quot;, &quot;in&quot;, [6])]" name="studio_filter_364_1jna85f9v" string="Amsterdam"/>
+  </xpath>
+  <xpath expr="//search[1]/separator[2]" position="after">
+    <group name="studio_group_by"/>
+    <filter name="studio_group_by_4t9_1jna80lvv" string="Schedule type" context="{'group_by': 'x_studio_day_type'}"/>
+    <filter name="studio_group_by_2e7_1jna80f3l" string="City" context="{'group_by': 'x_studio_city'}"/>
+  </xpath>
+</data></field>
+        </record>
+</odoo>

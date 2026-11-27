@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="rule_525" model="ir.rule">
+            <field name="name">Restrict Preparation Display by Owner</field>
+            <field name="model_id" ref="pos_preparation_display.model_pos_preparation_display_display"/>
+            <field name="domain_force">['|', ('x_studio_owner_id', '=', False), ('x_studio_owner_id', '=', user.id)]
+</field>
+            <field name="groups" eval="[Command.set([ref('gn_studio_grupos.group_146')])]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+</odoo>

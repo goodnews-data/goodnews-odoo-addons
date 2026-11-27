@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <!-- Automatización (activa en prod: True) -->
+        <record id="automation_9" model="base.automation">
+            <field name="name">Employee Archive → Update Partner Pricelist + Log M</field>
+            <field name="model_id" ref="hr.model_hr_employee"/>
+            <field name="trigger">on_archive</field>
+            <field name="active" eval="True"/>
+            <field name="filter_pre_domain">[('active', '=', True)]</field>
+            <field name="filter_domain">[('active', '=', False)]</field>
+            <field name="trigger_field_ids" eval="[Command.set([ref('hr.field_hr_employee__active')])]"/>
+        </record>
+
+        <record id="action_server_1731" model="ir.actions.server">
+            <field name="name">Ejecutar código</field>
+            <field name="model_id" ref="hr.model_hr_employee"/>
+            <field name="state">code</field>
+            <field name="usage">base_automation</field>
+            <field name="code"><![CDATA[# =====================================================================
+# Employee archived -> disconnect their GoodCard contacts.
+# Automation 9 (hr.employee, on archive) / action 1731.
+# Finds contacts by the employee's work contact (even if already
+# archived, so its pricelist is still reset) AND by work email.
+# Runs for every archived employee, whatever their email domain;
+# resets the public pricelist in every company, archives what Odoo
+# allows, and writes in the chatter exactly what was done.
+# =====================================================================
+
+# ---- Constants -------------------------------------------------------
+AUTHOR_USER_ID = 148                            # HR Spain, author of the notes
+COMPANY_PRICELIST_MAP = {1: 1, 7: 13, 8: 58, 12: 654}    # company -> public pricelist (12 = GN UK, added 23/11/2026)
+NOTE_SUBTYPE = 'mail.mt_note'
+
+# sudo: the HR user archiving may not have access to every company
+Partner = env['res.partner'].sudo()
+Users = env['res.users'].sudo()
+author_id = Users.browse(AUTHOR_USER_ID).partner_id.id
+
+for employee in records.sudo():
+    if employee.active:
+        continue
+
+    # 1) Candidate contacts: the work contact (active or not) + every active contact with the same email
+    contacts = employee.work_contact_id
+    if employee.work_email:
+        contacts |= Partner.search([('email_normalized', '=', employee.work_email.strip().lower())])
+
+    if not contacts:
+        employee.message_post(
+            body='%s: no contact found (no work contact and no contact with the work email), Good Card NOT disconnected. Check it manually.' % employee.name,
+            author_id=author_id,
+            subtype_xmlid=NOTE_SUBTYPE,
+        )
+        continue
+
+    # 2) Odoo refuses to archive the contact of an active user: leave those active and say so
+    blocked = Users.search([('partner_id', 'in', contacts.ids)]).partner_id
+    to_archive = (contacts - blocked).filtered('active')
+
+    # 3) Public pricelist in every mapped company (company-dependent property)
+    for company_id, pricelist_id in COMPANY_PRICELIST_MAP.items():
+        for contact in contacts.with_company(company_id):
+            if contact.property_product_pricelist.id != pricelist_id:
+                contact.write({'property_product_pricelist': pricelist_id})
+
+    if to_archive:
+        to_archive.write({'active': False})
+
+    # 4) Chatter: exactly what happened
+    summary = '%s Good Card has been disconnected. Public pricelist set on: %s.' % (
+        employee.name, ', '.join(contacts.mapped('display_name')))
+    if to_archive:
+        summary += ' Archived: %s.' % ', '.join(to_archive.mapped('display_name'))
+    if blocked:
+        summary += ' NOT archived, linked to an active user (archive the user first): %s.' % ', '.join(blocked.mapped('display_name'))
+
+    employee.message_post(body=summary, author_id=author_id, subtype_xmlid=NOTE_SUBTYPE)
+    for contact in contacts:
+        contact.message_post(body=summary, author_id=author_id, subtype_xmlid=NOTE_SUBTYPE)]]></field>
+            <field name="base_automation_id" ref="automation_9"/>
+        </record>
+
+        <record id="action_server_1759" model="ir.actions.server">
+            <field name="name">Limpiar Saldo GoodCrew</field>
+            <field name="model_id" ref="loyalty.model_loyalty_card"/>
+            <field name="state">object_write</field>
+            <field name="binding_model_id" ref="loyalty.model_loyalty_card"/>
+            <field name="crud_model_id" ref="loyalty.model_loyalty_card"/>
+            <field name="update_field_id" ref="loyalty.field_loyalty_card__points"/>
+            <field name="update_path">points</field>
+            <field name="update_m2m_operation">add</field>
+            <field name="update_boolean_value">true</field>
+            <field name="evaluation_type">value</field>
+            <field name="value">0</field>
+            <field name="binding_view_types">list,form</field>
+        </record>
+
+        <record id="action_server_1760" model="ir.actions.server">
+            <field name="name">Limpiar Saldo GoodCrew</field>
+            <field name="model_id" ref="loyalty.model_loyalty_card"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ===========================================================================
+# ACCIÓN PLANIFICADA — Loyalty Program 48 (Producción)
+# Procesa hasta 30 loyalty.card con points > 0 ejecutando Server Action 1816
+# ===========================================================================
+
+BATCH_SIZE = 30
+LOYALTY_PROGRAM_ID = 48
+SERVER_ACTION_ID = 1759
+
+# 1. Validar que la Server Action existe
+server_action = env['ir.actions.server'].browse(SERVER_ACTION_ID).exists()
+
+if not server_action:
+    log("Server Action %s no existe. Abortando." % SERVER_ACTION_ID, level='error')
+else:
+    # 2. Lote de pendientes (points > 0 excluye saldos a 0)
+    records = env['loyalty.card'].search(
+        [
+            ('program_id', '=', LOYALTY_PROGRAM_ID),
+            ('points', '>', 0),
+        ],
+        limit=BATCH_SIZE,
+        order='id asc',
+    )
+
+    if not records:
+        log("Sin pendientes en program %s con points > 0" % LOYALTY_PROGRAM_ID, level='info')
+    else:
+        processed = 0
+        errors = 0
+
+        for record in records:
+            try:
+                server_action.with_context(
+                    active_model='loyalty.card',
+                    active_id=record.id,
+                    active_ids=[record.id],
+                ).run()
+                processed += 1
+            except Exception as e:
+                errors += 1
+                log(
+                    "Error loyalty.card %s (points=%s): %s" % (record.id, record.points, e),
+                    level='error',
+                )
+
+        # 3. Resumen final
+        log(
+            "Lote completado | program=%s | procesados=%s | errores=%s | total=%s" % (
+                LOYALTY_PROGRAM_ID, processed, errors, len(records)
+            ),
+            level='info',
+        )
+]]></field>
+        </record>
+
+        <record id="action_server_1776" model="ir.actions.server">
+            <field name="name">Limpieza res.partner</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ============================================================
+# ACCION DE SERVIDOR: excepciones GoodCard -> etiqueta 104 + tarifa 38
+# Modelo: res.partner
+#
+# Estado final buscado para cada id de PARTNER_IDS:
+#   category_id                 = SOLO la etiqueta 104
+#   property_product_pricelist  = 38
+#
+# OJO: la escritura de etiquetas usa (6, 0, [104]), que SUSTITUYE
+# todas las etiquetas actuales. Es destructivo y no hay undo, por
+# eso el codigo volca un BACKUP (id|etiquetas|tarifa) al log antes
+# de escribir, tanto en diagnostico como en ejecucion real.
+#
+# Idempotente: los partners que ya estan en el estado final se
+# omiten, asi que puede relanzarse sin efectos secundarios.
+#
+# Compatible con safe_eval de Odoo 17:
+#   sin import / def / lambda / with / comprehensions / getattr
+#   sin asignacion directa de atributos (se usa write)
+# ============================================================
+
+# --- BLOQUE 0: constantes -----------------------------------
+EXECUTE = True                  # False = solo diagnostico | True = escribe
+TARGET_CATEGORY_ID = 104         # res.partner.category_id (unica etiqueta final)
+TARGET_PRICELIST_ID = 38         # product.pricelist destino
+COMPANY_ID = 1                   # compania para el ir.property de la tarifa
+LOG_CHUNK = 20                   # ids por linea de log en el backup
+MAX_LIST_LOG = 50                # tope de ids mostrados en los avisos
+ADD_NOTE = True                  # True = sella tambien la nota (siempre anadiendo)
+NOTE_TEXT = 'excepcion goodcard 04/08/2026: etiqueta 104 + tarifa 38'
+
+PARTNER_IDS = [
+    119754, 119759, 121782, 121784, 122126, 122127, 122201, 122421, 122617, 123621,
+    127042, 127328, 127593, 127598, 127599, 128502, 128571, 128572, 128599, 128601,
+    128608, 128640, 128649, 128652, 128653, 128654, 128656, 128662, 128663, 128667,
+    128669, 128671, 128672, 128673, 128676, 128677, 128678, 128684, 128685, 128686,
+    128687, 128688, 128689, 128690, 128691, 128692, 128693, 128694, 128695, 128696,
+    128697, 128699, 128700, 128701, 128702, 128703, 128704, 128706, 128707, 128709,
+    128711, 128712, 128713, 128715, 128716, 128726, 128734, 128736, 128737, 128738,
+    128740, 128741, 128747, 128750, 128755, 128757, 128768, 128787, 128802, 128808,
+    128814, 128838, 128840, 128874, 128965, 128968, 129019, 129232, 129242, 129394,
+    129446, 130717, 131510, 131726, 131812, 131816, 131835, 131855, 132077, 132116,
+    132133, 132146, 132152, 132254, 132360, 132380, 132384, 133308, 135674, 135687,
+    135724, 135764, 135823, 135827, 135855, 135863, 135983, 136076, 136129, 136147,
+    136295, 136296, 136303, 136319, 136450, 136534, 136551, 136552, 136756, 136855,
+    136969, 137033, 138916, 138917, 139014, 139050, 139064, 139290, 139303, 139345,
+    139475, 139477, 139539, 139675, 139692, 139703, 139869, 139935, 139997, 140062,
+    140079, 140086, 140326, 140407, 140466, 140490, 140569, 141237, 141368, 141443,
+    141587, 141623, 141906, 142368, 142524, 142729, 142956, 143304, 143315, 143363,
+    144149, 144449, 145215, 145224, 145225, 145226, 145228, 145234, 145237, 145248,
+    145291, 145461, 145597, 145695, 145792, 146240, 147324, 148311, 148330, 148545,
+    148574, 148717, 148733, 148806, 148867, 148886, 149877, 150088, 150125, 150353,
+    151187, 152100, 153876, 153967, 154115, 154591, 154592, 154606, 154648, 154914,
+    154992, 155032, 155137, 155263, 155315, 155358, 155438, 155645, 155924, 155925,
+    155948, 155981, 156026, 156113, 156248, 156291, 156529, 156539, 156562, 156697,
+    156740, 157066, 157085, 157157, 157171, 157172, 157217, 157305, 157329, 157359,
+    157418, 157509, 157590, 157616, 157744, 157787, 158280, 158296, 158297, 158470,
+    158538, 158540, 158541, 158543, 158694, 158732, 158779, 158816, 158842, 158844,
+    158974, 158988, 158989, 159029, 159038, 159071, 159137, 159141, 159269, 159331,
+    159369, 159442, 159450
+]
+
+# --- BLOQUE 1: verificaciones previas -----------------------
+# property_product_pricelist es company_dependent: el valor vive en
+# ir.property con company_id. COMPANY_ID debe ser la MISMA compania
+# en la que se escribio la tarifa 28 en la pasada anterior, o el
+# partner acabara con 28 en una compania y 38 en otra.
+pricelist = env['product.pricelist'].browse(TARGET_PRICELIST_ID).exists()
+category = env['res.partner.category'].browse(TARGET_CATEGORY_ID).exists()
+company = env['res.company'].browse(COMPANY_ID).exists()
+
+if not pricelist:
+    log('ERROR: la tarifa id=%s no existe. Abortado.' % TARGET_PRICELIST_ID)
+elif not category:
+    log('ERROR: la etiqueta id=%s no existe. Abortado.' % TARGET_CATEGORY_ID)
+elif not company:
+    log('ERROR: la compania id=%s no existe. Abortado.' % COMPANY_ID)
+else:
+    # browse (no search) para no perder partners archivados
+    Partner = env['res.partner'].with_company(COMPANY_ID)
+    partners = Partner.browse(PARTNER_IDS).exists()
+
+    found_ids = partners.ids
+    missing_ids = []
+    for partner_id in PARTNER_IDS:
+        if partner_id not in found_ids:
+            missing_ids.append(partner_id)
+
+    # --- BLOQUE 2: fotografia previa (backup + trabajo pendiente)
+    backup_rows = []
+    todo_ids = []
+    tag_changes = 0
+    pricelist_changes = 0
+    archived_ids = []
+
+    for partner in partners:
+        current_tags = partner.category_id.ids
+        current_pricelist = partner.property_product_pricelist.id
+
+        tags_str = ''
+        for tag_id in current_tags:
+            tags_str = tags_str + str(tag_id) + ','
+        tags_str = tags_str.rstrip(',') or '-'
+
+        backup_rows.append(str(partner.id) + '|' + tags_str + '|' + str(current_pricelist or '-'))
+
+        tags_ok = len(current_tags) == 1 and current_tags[0] == TARGET_CATEGORY_ID
+        pricelist_ok = current_pricelist == TARGET_PRICELIST_ID
+        if not tags_ok:
+            tag_changes += 1
+        if not pricelist_ok:
+            pricelist_changes += 1
+        if not tags_ok or not pricelist_ok:
+            todo_ids.append(partner.id)
+        if not partner.active:
+            archived_ids.append(partner.id)
+
+    # --- BLOQUE 3: log de contexto y backup ---------------------
+    log('CONTEXTO')
+    log('  compania destino . %s (%s)' % (COMPANY_ID, company.name))
+    log('  etiqueta destino . [%s] %s' % (category.id, category.display_name))
+    log('  tarifa destino ... [%s] %s (company_id=%s)'
+        % (pricelist.id, pricelist.name, pricelist.company_id.id or 'compartida'))
+    if pricelist.company_id and pricelist.company_id.id != COMPANY_ID:
+        log('  AVISO: la tarifa pertenece a otra compania. Revisa COMPANY_ID.')
+    log('  ids solicitados .. %s' % len(PARTNER_IDS))
+    log('  ids encontrados .. %s' % len(found_ids))
+    if missing_ids:
+        preview = []
+        for partner_id in missing_ids:
+            if len(preview) >= MAX_LIST_LOG:
+                break
+            preview.append(partner_id)
+        log('  AVISO %s ids inexistentes: %s%s'
+            % (len(missing_ids), preview, ' ...' if len(missing_ids) > MAX_LIST_LOG else ''))
+    if archived_ids:
+        preview = []
+        for partner_id in archived_ids:
+            if len(preview) >= MAX_LIST_LOG:
+                break
+            preview.append(partner_id)
+        log('  AVISO %s ids archivados: %s%s'
+            % (len(archived_ids), preview, ' ...' if len(archived_ids) > MAX_LIST_LOG else ''))
+    log('  cambian etiquetas  %s' % tag_changes)
+    log('  cambia tarifa .... %s' % pricelist_changes)
+    log('  a procesar ....... %s' % len(todo_ids))
+
+    log('BACKUP (formato id|etiquetas_previas|tarifa_previa)')
+    chunk = ''
+    chunk_count = 0
+    for row in backup_rows:
+        chunk = chunk + row + '  '
+        chunk_count += 1
+        if chunk_count % LOG_CHUNK == 0:
+            log('  ' + chunk)
+            chunk = ''
+    if chunk:
+        log('  ' + chunk)
+
+    # --- BLOQUE 4: escritura ------------------------------------
+    if not todo_ids:
+        log('Nada que hacer: todos los partners ya estan en el estado final.')
+    elif not EXECUTE:
+        log('DIAGNOSTICO (EXECUTE=False). No se ha escrito nada.')
+    else:
+        note_html = '<p>' + NOTE_TEXT + '</p>'
+        ok_count = 0
+        ko_count = 0
+        failed_ids = []
+
+        for partner in partners:
+            if partner.id not in todo_ids:
+                continue
+            # Savepoint por registro: un partner con constraint
+            # invalida no debe tumbar el lote entero.
+            env.cr.execute('SAVEPOINT goodcard_fix')
+            try:
+                values = {
+                    'category_id': [(6, 0, [TARGET_CATEGORY_ID])],
+                    'property_product_pricelist': TARGET_PRICELIST_ID,
+                }
+                if ADD_NOTE:
+                    # Nunca sobreescribe: anade al final de la nota existente.
+                    # Si el sello ya esta, no toca el campo (evita duplicados).
+                    current_note = partner.comment or ''
+                    if NOTE_TEXT not in current_note:
+                        values['comment'] = current_note + note_html
+                partner.write(values)
+                # Flush dentro del try: Odoo 17 bufferiza los write,
+                # sin esto el error saltaria fuera del savepoint.
+                env.flush_all()
+                env.cr.execute('RELEASE SAVEPOINT goodcard_fix')
+                ok_count += 1
+            except Exception as e:
+                env.invalidate_all()
+                env.cr.execute('ROLLBACK TO SAVEPOINT goodcard_fix')
+                ko_count += 1
+                failed_ids.append(partner.id)
+                log('Saltado partner id=%s (%s): %s' % (partner.id, partner.display_name, e))
+
+        log('Terminado. compania=%s OK=%s fallos=%s ids_fallidos=%s'
+            % (COMPANY_ID, ok_count, ko_count, failed_ids))]]></field>
+        </record>
+</odoo>

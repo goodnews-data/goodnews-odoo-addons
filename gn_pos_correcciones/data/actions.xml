@@ -1,0 +1,668 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="action_server_1755" model="ir.actions.server">
+            <field name="name">Impuesto pedido valor St. Jordi (código)</field>
+            <field name="model_id" ref="point_of_sale.model_pos_order"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[MARKER = 'ST_JORDI_TAX_FIX_APPLIED'
+PRODUCT_TMPL_ID = 9067
+TAX_PER_UNIT = 0.41
+SUBTOTAL_PER_UNIT = 4.09
+
+for order in records:
+    # Barrera de idempotencia: ¿ya se procesó este pedido?
+    if order.note and MARKER in order.note:
+        continue
+    
+    lines_to_fix = order.lines.filtered(
+        lambda l: (not l.tax_ids
+                   and l.product_id.product_tmpl_id.id == PRODUCT_TMPL_ID
+                   and l.product_id.taxes_id)
+    )
+    
+    if lines_to_fix:
+        for line in lines_to_fix:
+            line.write({
+                'tax_ids': [(6, 0, line.product_id.taxes_id.ids)],
+                'price_subtotal': line.qty * SUBTOTAL_PER_UNIT,
+            })
+        
+        total_tax_adjustment = sum(line.qty * TAX_PER_UNIT for line in lines_to_fix)
+        order.write({'amount_tax': order.amount_tax + total_tax_adjustment})
+        
+        # Marcar el pedido como procesado (preservando nota existente)
+        new_note = f'{MARKER}: ajuste IVA St. Jordi (+{total_tax_adjustment:.2f} €)'
+        if order.note:
+            new_note = order.note + '\n' + new_note
+        order.write({'note': new_note})
+
+
+]]></field>
+        </record>
+
+        <record id="action_server_1819" model="ir.actions.server">
+            <field name="name">Limpieza error coste</field>
+            <field name="model_id" ref="point_of_sale.model_pos_order"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ============================================================
+#  CORRECCIÓN MASIVA DE COSTE/MARGEN EN PEDIDOS POS
+#  Acción planificada (ir.cron) — Modelo: pos.order
+#  Procesa BATCH_SIZE pedidos por ejecución. Programar cada 15 min.
+# ============================================================
+
+# --- Constantes de configuración (revisar antes de activar) ---
+MARKER      = 'corrección costes 23/06/2026 error master data leche almendra'  # Nota + barrera de idempotencia
+PRODUCT_ID  = 6117                      # product.product a corregir
+UNIT_COST   = 2.089                   # <-- x: coste unitario CORRECTO. RELLENAR (>0) ANTES DE ACTIVAR
+BATCH_SIZE  = 150                       # Pedidos por ejecución
+COMPANY_IDS = [7]                       # company_id a procesar
+DATE_FROM   = '2026-06-02 22:00:00'     # date_order >= (UTC)
+DATE_TO     = '2026-06-23 10:59:59'     # date_order <= (UTC)
+SAVEPOINT   = 'pos_cost_fix'            # Nombre del savepoint por registro
+
+# --- Guarda de seguridad: no ejecutar con x sin configurar ---
+if UNIT_COST <= 0.0:
+    log(f'UNIT_COST sin configurar (x={UNIT_COST}). Aborta el lote sin cambios.', level='warning')
+else:
+    # Dominio: empresa + producto + rango de fechas + AÚN no procesados.
+    # 'not ilike' incluye los pedidos con note vacío (IS NULL) -> permite paginar de 100 en 100.
+    domain = [
+        ('company_id', 'in', COMPANY_IDS),
+        ('lines.product_id', 'in', [PRODUCT_ID]),
+        ('date_order', '>=', DATE_FROM),
+        ('date_order', '<=', DATE_TO),
+        ('note', 'not ilike', MARKER),
+    ]
+
+    orders = model.search(domain, limit=BATCH_SIZE, order='date_order asc')
+
+    processed = 0
+    failed = 0
+
+    for order in orders:
+        # Doble barrera de idempotencia (por si el note ya contiene el marcador)
+        if order.note and MARKER in order.note:
+            continue
+
+        # Savepoint por registro: aísla fallos; un pedido malo no revierte el lote entero
+        env.cr.execute(f'SAVEPOINT {SAVEPOINT}')
+        try:
+            lines_to_fix = order.lines.filtered(lambda l: l.product_id.id == PRODUCT_ID)
+            if not lines_to_fix:
+                env.cr.execute(f'RELEASE SAVEPOINT {SAVEPOINT}')
+                continue
+
+            for line in lines_to_fix:
+                coste = line.qty * UNIT_COST
+                # margen = subtotal sin impuestos − coste (qty negativa en devoluciones -> valores negativos, correcto)
+                line.write({
+                    'total_cost': coste,
+                    'margin': line.price_subtotal - coste,
+                    'is_total_cost_computed': True,   # mantiene los campos visibles/blindados
+                })
+
+            # Marcar el pedido como procesado (preservando la nota existente)
+            nota_actual = order.note or ''
+            order.write({'note': f'{nota_actual}\n{MARKER}' if nota_actual else MARKER})
+
+            env.cr.execute(f'RELEASE SAVEPOINT {SAVEPOINT}')
+            processed += 1
+        except Exception as e:
+            env.cr.execute(f'ROLLBACK TO SAVEPOINT {SAVEPOINT}')
+            env.cr.execute(f'RELEASE SAVEPOINT {SAVEPOINT}')
+            failed += 1
+            log(f'Error en pedido id={order.id}: {e}', level='warning')
+
+    log(f'Lote terminado: {processed} corregidos, {failed} con error, {len(orders)} candidatos.')
+
+
+]]></field>
+        </record>
+
+        <record id="action_server_1822" model="ir.actions.server">
+            <field name="name">Errores tickets</field>
+            <field name="model_id" ref="point_of_sale.model_pos_order"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ==========================================================================
+#  Inventory adjustment for POS tickets
+#  Server action model: pos.order
+#
+#  Three selection sources, decided per order, first match wins:
+#
+#    MODE A (lines)   -> at least one pos.order.line has x_studio_ticket_error
+#                        -> adjust stock from those lines
+#    MODE B (product) -> no line flagged, but x_studio_product is filled
+#                        -> adjust stock from the ticket qty of those products
+#    MODE C (fill)    -> neither of the above
+#                        -> DO NOT touch stock; prefill x_studio_product with
+#                           the products of the ticket whose total quantity is
+#                           greater than MIN_QTY_FILL, capped at MAX_FILL and
+#                           ordered by quantity descending
+#
+#  Mode C is a preparation step. After it runs the user presses the button
+#  again and mode B performs the actual adjustment.
+#
+#  BOTH adjusting modes ADD the quantity back to stock (10 + 2 = 12).
+#  To make mode A subtract again, set SIGN_LINES = -1.0 and nothing else.
+#
+#  The note is ALWAYS written, on every path, so each run leaves a trace.
+#
+#  Traceability:
+#    stock.move.line reference -> "data: <pos.order id>"  (+ " dev" on mode B)
+#    pos.order note field      -> stamp, one marker per mode; only the markers
+#                                 of an applied adjustment block a rerun
+# ==========================================================================
+
+# --- Fields -----------------------------------------------------------------
+ERROR_FIELD   = "x_studio_ticket_error"   # boolean on pos.order.line
+PRODUCT_FIELD = "x_studio_product"        # many2many product.product on pos.order
+QTY_FIELD     = "qty"
+NOTE_FIELD    = "note"                    # <-- change here if the field is named otherwise
+
+# --- Modes ------------------------------------------------------------------
+MODE_LINES   = "lines"
+MODE_PRODUCT = "product"
+MODE_FILL    = "fill"
+SIGN_LINES   = 1.0        # add back to stock
+SIGN_PRODUCT = 1.0        # add back to stock
+
+# --- Mode C criteria --------------------------------------------------------
+#  No product type filter: product.type is not reliably readable from the POS
+#  order context, so every product of the ticket is a candidate.
+MIN_QTY_FILL = 0.0    # strictly greater than this. Keep at 0.0: weighted products
+                      # sell as 0.032 kg and any higher threshold drops them all.
+MAX_FILL     = 10     # cap on how many products get prefilled, highest qty first
+
+# --- Markers ----------------------------------------------------------------
+#  Blocking (an adjustment was applied):
+MARKER_LINES   = "data: corregido"
+MARKER_PRODUCT = "data: devuelto"
+#  Non blocking (trace only, a rerun is still allowed):
+MARKER_FILL    = "data: preparado"
+MARKER_NOOP    = "data: sin ajuste"
+
+# --- Traceability -----------------------------------------------------------
+REF_PREFIX        = "data: "
+REF_SUFFIX_RETURN = " dev"
+
+# --- Safety -----------------------------------------------------------------
+MAX_RECORDS  = 40         # one SAVEPOINT per record, PostgreSQL subXID limit
+SAVEPOINT    = "pos_ticket_error"
+CLEAR_FLAG   = True       # unset the line flag after a mode A adjustment
+POST_CHATTER = True       # also log a note in the chatter when available
+FALLBACK_TZ  = "Europe/Madrid"
+PRECISION    = 3
+
+# --- Pre-flight: fail loudly if the note field does not exist ---------------
+Order = env["pos.order"]
+if NOTE_FIELD not in Order._fields:
+    raise UserError(
+        "El campo '%s' no existe en pos.order. Revisa Ajustes > Tecnico > Campos "
+        "y ajusta la constante NOTE_FIELD." % NOTE_FIELD
+    )
+if PRODUCT_FIELD not in Order._fields:
+    raise UserError("El campo '%s' no existe en pos.order." % PRODUCT_FIELD)
+HAS_CHATTER = "message_ids" in Order._fields
+
+# --- Batch guard ------------------------------------------------------------
+if len(records) > MAX_RECORDS:
+    raise UserError(
+        "Selecciona como maximo %s pedidos por lote (has seleccionado %s)."
+        % (MAX_RECORDS, len(records))
+    )
+
+# --- Correction stamp in the user's timezone --------------------------------
+user_tz = env.user.tz or FALLBACK_TZ
+now_local = timezone("UTC").localize(datetime.datetime.utcnow()).astimezone(timezone(user_tz))
+stamp_suffix = " " + now_local.strftime("%d/%m/%Y %H:%M")
+
+action = None
+done = []
+filled = []
+skipped = []
+noop = []
+empty = []
+warnings = []
+errors = []
+
+for order in records:
+    env.cr.execute("SAVEPOINT " + SAVEPOINT)
+    try:
+        # ---- 1. Single pass over the ticket ----------------------------------
+        target_products = order[PRODUCT_FIELD]
+        flagged_lines = env["pos.order.line"]
+        qty_flagged = {}
+        qty_target = {}
+        qty_all = {}
+        product_by_id = {}
+
+        for line in order.lines:
+            product = line.product_id
+            if not product:
+                continue
+            qty = line[QTY_FIELD] or 0.0
+            product_by_id[product.id] = product
+            qty_all[product.id] = qty_all.get(product.id, 0.0) + qty
+            if line[ERROR_FIELD]:
+                flagged_lines |= line
+                qty_flagged[product.id] = qty_flagged.get(product.id, 0.0) + qty
+            if product in target_products:
+                qty_target[product.id] = qty_target.get(product.id, 0.0) + qty
+
+        existing_note = order[NOTE_FIELD] or ""
+
+        # ---- 2. MODE C: nothing selected -> prefill the many2many -------------
+        order_ref = REF_PREFIX + str(order.id)
+
+        if not qty_flagged and not target_products:
+            candidates = []
+            rejected = []
+            for product_id in qty_all:
+                product = product_by_id[product_id]
+                qty = qty_all[product_id]
+                if float_compare(qty, MIN_QTY_FILL, precision_digits=PRECISION) <= 0:
+                    rejected.append("%s (cantidad %.3f)" % (product.display_name, qty))
+                    continue
+                candidates.append((qty, product_id, product.display_name))
+
+            # Highest quantity first, so the cap keeps the most relevant lines
+            candidates = sorted(candidates, reverse=True)
+            overflow = []
+            if len(candidates) > MAX_FILL:
+                for item in candidates[MAX_FILL:]:
+                    overflow.append(item[2])
+                candidates = candidates[:MAX_FILL]
+
+            fill_ids = []
+            fill_names = []
+            for item in candidates:
+                fill_ids.append(item[1])
+                fill_names.append(item[2])
+
+            if fill_ids:
+                order.write({PRODUCT_FIELD: [Command.set(fill_ids)]})
+                stamp = (MARKER_FILL + stamp_suffix + " [" + order_ref + "]"
+                         + " | propuestos: " + ", ".join(fill_names))
+                filled.append(order.name)
+            else:
+                stamp = (MARKER_NOOP + stamp_suffix + " [" + order_ref + "]"
+                         + " | sin productos con cantidad > %s" % MIN_QTY_FILL)
+                empty.append(order.name)
+            if overflow:
+                stamp = (stamp + " | fuera del tope de %s: " % MAX_FILL
+                         + ", ".join(overflow))
+                warnings.append(
+                    order.name + ": el ticket supera el tope de %s productos, "
+                    "quedan fuera %s" % (MAX_FILL, len(overflow))
+                )
+            if rejected:
+                stamp = stamp + " | descartados: " + ", ".join(rejected)
+
+            new_note = existing_note + "\n" + stamp if existing_note else stamp
+            order.write({NOTE_FIELD: new_note})
+            if POST_CHATTER and HAS_CHATTER:
+                order.message_post(body=stamp, subtype_xmlid="mail.mt_note")
+            env.flush_all()
+            _logger.info("[ticket_error] %s | %s | %s", order.name, MODE_FILL, stamp)
+            env.cr.execute("RELEASE SAVEPOINT " + SAVEPOINT)
+            continue
+
+        # ---- 3. Decide the adjusting mode -------------------------------------
+        if qty_flagged:
+            mode = MODE_LINES
+            marker = MARKER_LINES
+            sign = SIGN_LINES
+            qty_by_product = qty_flagged
+            move_ref = REF_PREFIX + str(order.id)
+        else:
+            mode = MODE_PRODUCT
+            marker = MARKER_PRODUCT
+            sign = SIGN_PRODUCT
+            qty_by_product = qty_target
+            move_ref = REF_PREFIX + str(order.id) + REF_SUFFIX_RETURN
+
+        # ---- 4. Idempotency, evaluated per mode ------------------------------
+        if marker in existing_note:
+            skipped.append(order.name)
+            env.cr.execute("RELEASE SAVEPOINT " + SAVEPOINT)
+            continue
+
+        # ---- 5. Selected products missing from the ticket --------------------
+        missing = []
+        if mode == MODE_PRODUCT:
+            for product in target_products:
+                if product.id not in qty_target:
+                    missing.append(product.display_name)
+                    warnings.append(
+                        order.name + ": " + product.display_name + " no esta en el ticket"
+                    )
+
+        # ---- 6. Nothing to adjust: leave a trace, without a blocking marker ---
+        if not qty_by_product:
+            detail = "ningun producto coincide con el ticket"
+            if missing:
+                detail = "no esta en el ticket: " + ", ".join(missing)
+            stamp = MARKER_NOOP + stamp_suffix + " [" + move_ref + "] | " + detail
+            new_note = existing_note + "\n" + stamp if existing_note else stamp
+            order.write({NOTE_FIELD: new_note})
+            if POST_CHATTER and HAS_CHATTER:
+                order.message_post(body=stamp, subtype_xmlid="mail.mt_note")
+            env.flush_all()
+            noop.append(order.name)
+            env.cr.execute("RELEASE SAVEPOINT " + SAVEPOINT)
+            continue
+
+        # ---- 7. Source location ----------------------------------------------
+        company = order.company_id or env.company
+        location = order.config_id.picking_type_id.default_location_src_id
+        if not location and order.picking_ids:
+            location = order.picking_ids[:1].location_id
+        if not location:
+            raise UserError("El pedido %s no tiene ubicacion de origen." % order.name)
+
+        # ---- 8. Apply the inventory count ------------------------------------
+        Quant = env["stock.quant"].sudo().with_company(company.id).with_context(
+            inventory_mode=True, inventory_name=move_ref)
+
+        resumen = []
+        for product_id in qty_by_product:
+            qty = qty_by_product[product_id]
+            if float_compare(qty, 0.0, precision_digits=PRECISION) == 0:
+                continue
+            product = product_by_id[product_id]
+            quant = Quant.search([
+                ("product_id", "=", product_id),
+                ("location_id", "=", location.id),
+                ("lot_id", "=", False),
+                ("package_id", "=", False),
+                ("owner_id", "=", False),
+            ], limit=1)
+            actual = quant.quantity if quant else 0.0
+            objetivo = actual + (sign * qty)
+            if quant:
+                quant.write({"inventory_quantity": objetivo})
+            else:
+                quant = Quant.create({
+                    "product_id": product_id,
+                    "location_id": location.id,
+                    "inventory_quantity": objetivo,
+                })
+            quant.action_apply_inventory()
+            resumen.append("%s: %.3f -> %.3f" % (product.display_name, actual, objetivo))
+
+        # ---- 9. Note on every path, then flush inside the savepoint -----------
+        if resumen:
+            stamp = (marker + stamp_suffix + " [" + move_ref + "] | "
+                     + " ; ".join(resumen))
+            done.append(order.name)
+        else:
+            stamp = (MARKER_NOOP + stamp_suffix + " [" + move_ref + "]"
+                     + " | cantidades a cero")
+            noop.append(order.name)
+        if missing:
+            stamp = stamp + " | no esta en el ticket: " + ", ".join(missing)
+
+        new_note = existing_note + "\n" + stamp if existing_note else stamp
+        order.write({NOTE_FIELD: new_note})
+        if POST_CHATTER and HAS_CHATTER:
+            order.message_post(body=stamp, subtype_xmlid="mail.mt_note")
+        if CLEAR_FLAG and resumen and mode == MODE_LINES and flagged_lines:
+            flagged_lines.write({ERROR_FIELD: False})
+        env.flush_all()
+
+        _logger.info("[ticket_error] %s | %s | %s | %s", order.name, mode, move_ref, stamp)
+        env.cr.execute("RELEASE SAVEPOINT " + SAVEPOINT)
+
+    except UserError as e:
+        env.cr.clear()
+        env.cr.execute("ROLLBACK TO SAVEPOINT " + SAVEPOINT)
+        env.invalidate_all(flush=False)
+        errors.append(order.name + ": " + str(e))
+
+    except Exception as e:
+        env.cr.clear()
+        env.cr.execute("ROLLBACK TO SAVEPOINT " + SAVEPOINT)
+        env.invalidate_all(flush=False)
+        errors.append(order.name + ": " + str(e))
+        _logger.warning("[ticket_error] %s: %s", order.display_name, e)
+
+# --- Single notification covering every outcome -----------------------------
+sections = []
+if filled:
+    sections.append("Productos propuestos, revisa y vuelve a pulsar: " + ", ".join(filled))
+if done:
+    sections.append("Corregidos: " + ", ".join(done))
+if skipped:
+    sections.append("Ya corregidos: " + ", ".join(skipped))
+if noop:
+    sections.append("Sin ajuste: " + ", ".join(noop))
+if empty:
+    sections.append("Sin productos que proponer: " + ", ".join(empty))
+if warnings:
+    sections.append("Avisos: " + " ; ".join(warnings))
+if errors:
+    sections.append("Errores: " + " ; ".join(errors))
+
+if sections:
+    if errors:
+        kind = "danger"
+    elif warnings or skipped or noop:
+        kind = "warning"
+    elif filled:
+        kind = "info"
+    else:
+        kind = "success"
+    action = {
+        "type": "ir.actions.client",
+        "tag": "display_notification",
+        "params": {
+            "title": "Correccion de ticket",
+            "message": " | ".join(sections),
+            "type": kind,
+            "sticky": True if (errors or warnings or filled) else False,
+        },
+    }]]></field>
+            <field name="binding_model_id" ref="point_of_sale.model_pos_order"/>
+            <field name="binding_view_types">list,form</field>
+        </record>
+
+        <record id="action_server_1871" model="ir.actions.server">
+            <field name="name">cambiar estado</field>
+            <field name="model_id" ref="point_of_sale.model_pos_order"/>
+            <field name="state">object_write</field>
+            <field name="crud_model_id" ref="point_of_sale.model_pos_order"/>
+            <field name="update_field_id" ref="point_of_sale.field_pos_order__state"/>
+            <field name="update_path">state</field>
+            <field name="update_m2m_operation">add</field>
+            <field name="update_boolean_value">true</field>
+            <field name="evaluation_type">value</field>
+            <field name="value">done</field>
+            <field name="selection_value" ref="point_of_sale.selection__pos_order__state__done"/>
+        </record>
+
+        <record id="action_server_1876" model="ir.actions.server">
+            <field name="name">IVA corregir</field>
+            <field name="model_id" ref="point_of_sale.model_pos_order"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# =====================================================================
+# Server action: re-tax POS order lines flagged as "Ticket error"
+# Model:   pos.order  (run from list or form: Acción -> this action)
+# Odoo:    17 (safe_eval compatible: no def / lambda / import / with,
+#          no getattr/hasattr, no direct attribute assignment)
+#
+# For every selected order, each line with x_studio_ticket_error:
+#   1. Gets TARGET_TAX_ID (20% Inclusive) as its only tax
+#   2. Recomputes price_subtotal / price_subtotal_incl exactly as
+#      Odoo does (price_unit, discount, qty, currency rounding)
+#   3. The order amount_tax is recomputed; amount_total must not change
+#   4. An audit entry is appended to the order "Notas" (note field)
+#   5. The "Ticket error" flag is cleared again
+# Margin (line + order) is recomputed automatically by Odoo.
+# Any validation error rolls back the whole run (nothing half-applied).
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------
+TARGET_TAX_ID = 1856                  # "20% (Inclusive)" -- ID differs per instance
+FLAG_FIELD = 'x_studio_ticket_error'  # boolean on pos.order.line
+BLOCKED_ORDER_STATES = ['draft', 'cancel', 'invoiced']
+ALLOW_CLOSED_SESSIONS = True          # closed session => accounting needs manual adjustment
+LOG_PREFIX = '[TICKET_ERROR_VAT]'
+NOTIFY_STICKY = True
+NOTE_DATE_FORMAT = '%d/%m/%Y %H:%M'
+NOTE_SEPARATOR = '\n\n'
+EMPTY_TAX_LABEL = 'Sin impuesto'
+
+# Messages
+MSG_NO_TAX = '%s El impuesto con ID %s no existe en esta base de datos.'
+MSG_NOT_INCLUDED = '%s El impuesto "%s" no es "incluido en el precio": el total del ticket cambiaría y dejaría de cuadrar con los pagos.'
+MSG_BLOCKED_STATE = '%s El pedido %s está facturado, cancelado o en borrador. Si está facturado hay que emitir una factura rectificativa.'
+MSG_WRONG_COMPANY = '%s El impuesto "%s" pertenece a %s y el pedido %s a %s.'
+MSG_CLOSED_SESSION = '%s La sesión %s del pedido %s ya está cerrada.'
+MSG_FPOS_MAPPING = '%s La posición fiscal "%s" del pedido %s convierte "%s" en "%s". Quita la posición fiscal o revisa el mapeo.'
+MSG_TOTAL_CHANGED = '%s El total del pedido %s cambiaría de %s a %s. Cambio cancelado.'
+MSG_LOG_OK = '%s %s -> IVA %s %s (total %s sin cambios)%s'
+MSG_LOG_CLOSED = ' | SESION CERRADA: requiere asiento de ajuste'
+MSG_TITLE = 'IVA corregido'
+MSG_NOTHING = 'No hay líneas con "Ticket error" pendientes de corregir en los pedidos seleccionados.'
+MSG_DONE = '%s línea(s) corregidas en %s pedido(s): %s.'
+MSG_DONE_CLOSED = ' Pedidos de sesión cerrada: %s (requieren asiento de ajuste).'
+NOTE_HEADER = '[Corrección IVA] %s UTC - %s'
+NOTE_LINE = '- %s (cant. %s): %s -> %s | base %s -> %s'
+NOTE_FOOTER = 'IVA del pedido: %s -> %s %s (total %s sin cambios)'
+NOTE_CLOSED = 'Sesión %s cerrada: requiere asiento de ajuste contable.'
+
+# ---------------------------------------------------------------------
+# 1. Validate the target tax
+# ---------------------------------------------------------------------
+target_tax = env['account.tax'].browse(TARGET_TAX_ID).exists()
+if not target_tax:
+    raise UserError(MSG_NO_TAX % (LOG_PREFIX, TARGET_TAX_ID))
+if not target_tax.price_include:
+    raise UserError(MSG_NOT_INCLUDED % (LOG_PREFIX, target_tax.name))
+
+# ---------------------------------------------------------------------
+# 2. Collect flagged lines that still need the change (idempotent)
+# ---------------------------------------------------------------------
+lines_to_fix = env['pos.order.line']
+lines_flag_only = env['pos.order.line']   # flagged but already on target tax
+for selected_order in records:
+    for line in selected_order.lines:
+        if line[FLAG_FIELD]:
+            if line.tax_ids != target_tax:
+                lines_to_fix |= line
+            else:
+                lines_flag_only |= line
+
+orders = lines_to_fix.mapped('order_id')
+
+# ---------------------------------------------------------------------
+# 3. Validate every affected order BEFORE writing anything
+# ---------------------------------------------------------------------
+for order in orders:
+    if order.state in BLOCKED_ORDER_STATES or order.account_move:
+        raise UserError(MSG_BLOCKED_STATE % (LOG_PREFIX, order.name))
+    if target_tax.company_id != order.company_id:
+        raise UserError(MSG_WRONG_COMPANY % (LOG_PREFIX, target_tax.name, target_tax.company_id.name, order.name, order.company_id.name))
+    if order.session_id.state == 'closed' and not ALLOW_CLOSED_SESSIONS:
+        raise UserError(MSG_CLOSED_SESSION % (LOG_PREFIX, order.session_id.name, order.name))
+    if order.fiscal_position_id:
+        mapped_tax = order.fiscal_position_id.map_tax(target_tax)
+        if mapped_tax != target_tax:
+            raise UserError(MSG_FPOS_MAPPING % (LOG_PREFIX, order.fiscal_position_id.name, order.name, target_tax.name, ', '.join(mapped_tax.mapped('name'))))
+
+# ---------------------------------------------------------------------
+# 4. Re-tax each line (mirrors PosOrderLine._compute_amount_line_all)
+# ---------------------------------------------------------------------
+note_lines = {}     # order.id -> list of audit lines
+old_order_tax = {}  # order.id -> amount_tax before the change
+for order in orders:
+    note_lines[order.id] = []
+    old_order_tax[order.id] = order.amount_tax
+
+for line in lines_to_fix:
+    order = line.order_id
+    old_tax_label = ', '.join(line.tax_ids.mapped('name')) or EMPTY_TAX_LABEL
+    old_subtotal = line.price_subtotal
+    price = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+    tax_result = target_tax.compute_all(
+        price,
+        currency=order.currency_id,
+        quantity=line.qty,
+        product=line.product_id,
+        partner=order.partner_id,
+    )
+    line.write({
+        'tax_ids': [(6, 0, [target_tax.id])],
+        'price_subtotal': tax_result['total_excluded'],
+        'price_subtotal_incl': tax_result['total_included'],
+        FLAG_FIELD: False,
+    })
+    note_lines[order.id].append(NOTE_LINE % (
+        line.full_product_name or line.product_id.display_name, line.qty,
+        old_tax_label, target_tax.name, old_subtotal, tax_result['total_excluded']))
+
+if lines_flag_only:
+    lines_flag_only.write({FLAG_FIELD: False})
+
+# ---------------------------------------------------------------------
+# 5. Recompute order totals (mirrors PosOrder._compute_batch_amount_all)
+# ---------------------------------------------------------------------
+closed_order_names = []
+now_label = datetime.datetime.utcnow().strftime(NOTE_DATE_FORMAT)
+for order in orders:
+    currency = order.currency_id
+    total_included = 0.0
+    total_excluded = 0.0
+    for order_line in order.lines:
+        total_included += order_line.price_subtotal_incl
+        total_excluded += order_line.price_subtotal
+
+    new_total = currency.round(total_included)
+    new_tax = currency.round(total_included - total_excluded)
+
+    if currency.compare_amounts(new_total, order.amount_total) != 0:
+        raise UserError(MSG_TOTAL_CHANGED % (LOG_PREFIX, order.name, order.amount_total, new_total))
+
+    session_note = ''
+    audit = [NOTE_HEADER % (now_label, env.user.name)]
+    audit.extend(note_lines[order.id])
+    audit.append(NOTE_FOOTER % (old_order_tax[order.id], new_tax, currency.name, new_total))
+    if order.session_id.state == 'closed':
+        session_note = MSG_LOG_CLOSED
+        closed_order_names.append('%s (%s)' % (order.name, order.session_id.name))
+        audit.append(NOTE_CLOSED % order.session_id.name)
+
+    audit_text = '\n'.join(audit)
+    if order.note:
+        audit_text = order.note + NOTE_SEPARATOR + audit_text
+
+    order.write({'amount_tax': new_tax, 'note': audit_text})
+    log(MSG_LOG_OK % (LOG_PREFIX, order.name, new_tax, currency.name, new_total, session_note), level='info')
+
+# ---------------------------------------------------------------------
+# 6. User feedback
+# ---------------------------------------------------------------------
+notify_type = 'warning'
+notify_message = MSG_NOTHING
+if lines_to_fix:
+    notify_type = 'success'
+    notify_message = MSG_DONE % (len(lines_to_fix), len(orders), ', '.join(orders.mapped('name')))
+    if closed_order_names:
+        notify_type = 'warning'
+        notify_message += MSG_DONE_CLOSED % ', '.join(closed_order_names)
+
+action = {
+    'type': 'ir.actions.client',
+    'tag': 'display_notification',
+    'params': {
+        'title': MSG_TITLE,
+        'message': notify_message,
+        'type': notify_type,
+        'sticky': NOTIFY_STICKY,
+        'next': {'type': 'ir.actions.client', 'tag': 'soft_reload'},
+    },
+}]]></field>
+        </record>
+</odoo>

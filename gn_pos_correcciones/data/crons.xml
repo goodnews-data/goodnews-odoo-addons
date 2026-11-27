@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Se instala APAGADA. En prod: apagada, cada 5 minutes -->
+        <record id="cron_181" model="ir.cron">
+            <field name="name">Limpieza error coste</field>
+            <field name="model_id" ref="point_of_sale.model_pos_order"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ============================================================
+#  CORRECCIÓN MASIVA DE COSTE/MARGEN EN PEDIDOS POS
+#  Acción planificada (ir.cron) — Modelo: pos.order
+#  Procesa BATCH_SIZE pedidos por ejecución. Programar cada 15 min.
+# ============================================================
+
+# --- Constantes de configuración (revisar antes de activar) ---
+MARKER      = 'corrección costes 23/06/2026 error master data leche almendra'  # Nota + barrera de idempotencia
+PRODUCT_ID  = 6117                      # product.product a corregir
+UNIT_COST   = 2.089                   # <-- x: coste unitario CORRECTO. RELLENAR (>0) ANTES DE ACTIVAR
+BATCH_SIZE  = 150                       # Pedidos por ejecución
+COMPANY_IDS = [7]                       # company_id a procesar
+DATE_FROM   = '2026-06-02 22:00:00'     # date_order >= (UTC)
+DATE_TO     = '2026-06-23 10:59:59'     # date_order <= (UTC)
+SAVEPOINT   = 'pos_cost_fix'            # Nombre del savepoint por registro
+
+# --- Guarda de seguridad: no ejecutar con x sin configurar ---
+if UNIT_COST <= 0.0:
+    log(f'UNIT_COST sin configurar (x={UNIT_COST}). Aborta el lote sin cambios.', level='warning')
+else:
+    # Dominio: empresa + producto + rango de fechas + AÚN no procesados.
+    # 'not ilike' incluye los pedidos con note vacío (IS NULL) -> permite paginar de 100 en 100.
+    domain = [
+        ('company_id', 'in', COMPANY_IDS),
+        ('lines.product_id', 'in', [PRODUCT_ID]),
+        ('date_order', '>=', DATE_FROM),
+        ('date_order', '<=', DATE_TO),
+        ('note', 'not ilike', MARKER),
+    ]
+
+    orders = model.search(domain, limit=BATCH_SIZE, order='date_order asc')
+
+    processed = 0
+    failed = 0
+
+    for order in orders:
+        # Doble barrera de idempotencia (por si el note ya contiene el marcador)
+        if order.note and MARKER in order.note:
+            continue
+
+        # Savepoint por registro: aísla fallos; un pedido malo no revierte el lote entero
+        env.cr.execute(f'SAVEPOINT {SAVEPOINT}')
+        try:
+            lines_to_fix = order.lines.filtered(lambda l: l.product_id.id == PRODUCT_ID)
+            if not lines_to_fix:
+                env.cr.execute(f'RELEASE SAVEPOINT {SAVEPOINT}')
+                continue
+
+            for line in lines_to_fix:
+                coste = line.qty * UNIT_COST
+                # margen = subtotal sin impuestos − coste (qty negativa en devoluciones -> valores negativos, correcto)
+                line.write({
+                    'total_cost': coste,
+                    'margin': line.price_subtotal - coste,
+                    'is_total_cost_computed': True,   # mantiene los campos visibles/blindados
+                })
+
+            # Marcar el pedido como procesado (preservando la nota existente)
+            nota_actual = order.note or ''
+            order.write({'note': f'{nota_actual}\n{MARKER}' if nota_actual else MARKER})
+
+            env.cr.execute(f'RELEASE SAVEPOINT {SAVEPOINT}')
+            processed += 1
+        except Exception as e:
+            env.cr.execute(f'ROLLBACK TO SAVEPOINT {SAVEPOINT}')
+            env.cr.execute(f'RELEASE SAVEPOINT {SAVEPOINT}')
+            failed += 1
+            log(f'Error en pedido id={order.id}: {e}', level='warning')
+
+    log(f'Lote terminado: {processed} corregidos, {failed} con error, {len(orders)} candidatos.')
+
+
+]]></field>
+            <field name="interval_number" eval="5"/>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall" eval="0"/>
+            <field name="doall" eval="False"/>
+            <field name="priority" eval="1000"/>
+            <field name="active" eval="False"/>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="model_x_link_controller" model="ir.model">
+            <field name="name">Link controller</field>
+            <field name="model">x_link_controller</field>
+            <field name="state">manual</field>
+            <field name="is_mail_thread" eval="True"/>
+            <field name="is_mail_activity" eval="True"/>
+        </record>
+
+        <record id="field_x_link_controller__x_active" model="ir.model.fields">
+            <field name="name">x_active</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">Activo</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="tracking" eval="1"/>
+        </record>
+
+        <record id="field_x_link_controller__x_name" model="ir.model.fields">
+            <field name="name">x_name</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">Descripción</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="True"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="True"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="tracking" eval="1"/>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_api" model="ir.model.fields">
+            <field name="name">x_studio_api</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">API</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_califrais_id" model="ir.model.fields">
+            <field name="name">x_studio_califrais_id</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">Califrais id</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_califrais_name" model="ir.model.fields">
+            <field name="name">x_studio_califrais_name</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">Califrais name</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_price" model="ir.model.fields">
+            <field name="name">x_studio_price</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">Price</field>
+            <field name="ttype">float</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_price_change" model="ir.model.fields">
+            <field name="name">x_studio_price_change</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">Price change</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_sequence" model="ir.model.fields">
+            <field name="name">x_studio_sequence</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">Secuencia</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_standard_cost" model="ir.model.fields">
+            <field name="name">x_studio_standard_cost</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">Standard cost</field>
+            <field name="ttype">float</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_update_cost" model="ir.model.fields">
+            <field name="name">x_studio_update_cost</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">Actualizar coste</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_url" model="ir.model.fields">
+            <field name="name">x_studio_url</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">URL</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_company" model="ir.model.fields">
+            <field name="name">x_studio_company</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">Company</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">res.company</field>
+            <field name="relation_table">x_res_company_x_link_controller_rel</field>
+            <field name="column1">x_link_controller_id</field>
+            <field name="column2">res_company_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_product" model="ir.model.fields">
+            <field name="name">x_studio_product</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">Product</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">product.template</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_supplier" model="ir.model.fields">
+            <field name="name">x_studio_supplier</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">Supplier</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">res.partner</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_udm_reabastecimiento" model="ir.model.fields">
+            <field name="name">x_studio_udm_reabastecimiento</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">udm reabastecimiento</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">uom.uom</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_purchase_tax" model="ir.model.fields">
+            <field name="name">x_studio_purchase_tax</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">Purchase tax</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">account.tax</field>
+            <field name="depends">x_studio_product, x_studio_company</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="True"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="False"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="compute"><![CDATA[for record in self:
+    if record.x_studio_product:
+        company = record.x_studio_company or self.env.company
+        
+        taxes = record.x_studio_product.supplier_taxes_id
+        filtered_taxes = self.env['account.tax']
+        
+        for t in taxes:
+            if t.type_tax_use == 'purchase' and (not t.company_id or t.company_id == company):
+                filtered_taxes |= t
+        
+        record['x_studio_purchase_tax'] = filtered_taxes
+    else:
+        record['x_studio_purchase_tax'] = False]]></field>
+        </record>
+
+        <record id="field_x_link_controller__x_studio_udm_compra" model="ir.model.fields">
+            <field name="name">x_studio_udm_compra</field>
+            <field name="model_id" ref="model_x_link_controller"/>
+            <field name="field_description">Udm compra</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">uom.uom</field>
+            <field name="depends">x_studio_product</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="False"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="compute"><![CDATA[for record in self:
+    record['x_studio_udm_compra'] = record.x_studio_product.uom_po_id.id if record.x_studio_product else 1]]></field>
+        </record>
+
+        <!-- Orden de la lista (después de crear sus campos) -->
+        <record id="model_x_link_controller" model="ir.model">
+            <field name="order">x_studio_sequence asc, id asc</field>
+        </record>
+</odoo>

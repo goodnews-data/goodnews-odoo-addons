@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="view_6254" model="ir.ui.view">
+            <field name="name">Default list view for x_link_controller</field>
+            <field name="model">x_link_controller</field>
+            <field name="type">tree</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><tree>
+  <field name="x_studio_sequence" widget="handle"/>
+  <field name="x_name"/>
+</tree></field>
+        </record>
+
+        <record id="view_6255" model="ir.ui.view">
+            <field name="name">Default form view for x_link_controller</field>
+            <field name="model">x_link_controller</field>
+            <field name="type">form</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><form>
+  <header/>
+  <sheet string="Link controller">
+    <widget name="web_ribbon" text="Archivado" bg_color="text-bg-danger" invisible="x_active"/>
+    <field name="x_active" invisible="1"/>
+    <div class="oe_title">
+                <h1>
+                    <field name="x_name" required="1" placeholder="Name..."/>
+                </h1>
+            </div>
+    <group name="studio_group_1cada5">
+      <group name="studio_group_1cada5_left"/>
+      <group name="studio_group_1cada5_right"/>
+    </group>
+  </sheet>
+  <div class="oe_chatter" name="oe_chatter">
+    <field name="message_follower_ids"/>
+    <field name="message_ids"/>
+    <field name="activity_ids"/>
+  </div>
+</form></field>
+        </record>
+
+        <record id="view_6256" model="ir.ui.view">
+            <field name="name">Default search view for x_link_controller</field>
+            <field name="model">x_link_controller</field>
+            <field name="type">search</field>
+            <field name="priority" eval="16"/>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><search>
+  <field name="x_name"/>
+  <separator/>
+  <filter string="Archivado" name="archived_x_link_controller" domain="[['x_active', '=', False]]"/>
+  <separator/>
+</search></field>
+        </record>
+
+        <record id="view_6257" model="ir.ui.view">
+            <field name="name">Odoo Studio: Default form view for x_link_controller customization</field>
+            <field name="model">x_link_controller</field>
+            <field name="inherit_id" ref="view_6255"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//form[1]/header[1]" position="inside">
+    <button string="Actualizar enlace" name="%(action_server_1752)d" type="action"/>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_1cada5_left']" position="inside">
+    <field name="x_studio_product" options="{&quot;no_create&quot;:true}" domain="[&quot;&amp;&quot;, (&quot;type&quot;, &quot;not in&quot;, [&quot;service&quot;, &quot;combo&quot;]), (&quot;purchase_ok&quot;, &quot;=&quot;, True)]"/>
+    <field name="x_studio_url"/>
+    <field name="x_studio_supplier" domain="[(&quot;email&quot;, &quot;not ilike&quot;, &quot;goodnews&quot;)]" options="{&quot;no_create&quot;:true}" required="x_studio_price_change == True"/>
+    <field name="x_studio_company" widget="many2many_tags" options="{&quot;no_create&quot;:true}" domain="[&quot;|&quot;, &quot;|&quot;, (&quot;id&quot;, &quot;=&quot;, 1), (&quot;id&quot;, &quot;=&quot;, 7), (&quot;id&quot;, &quot;=&quot;, 8)]" required="True"/>
+    <field name="x_studio_udm_compra" options="{&quot;no_create&quot;:true}" invisible="x_studio_price_change != True"/>
+    <field name="x_studio_udm_reabastecimiento" options="{&quot;no_create&quot;:true}"/>
+    <field name="x_studio_purchase_tax" options="{&quot;no_create&quot;:true}" invisible="x_studio_price_change != True"/>
+  </xpath>
+  <xpath expr="//group[@name='studio_group_1cada5_right']" position="inside">
+    <field name="x_studio_api" widget="boolean_toggle"/>
+    <field name="x_studio_califrais_name" invisible="x_studio_api != True"/>
+    <field name="x_studio_califrais_id" invisible="x_studio_api != True"/>
+    <field name="x_studio_price_change" widget="boolean_toggle"/>
+    <field name="x_studio_price" invisible="x_studio_price_change != True" string="Price"/>
+    <field name="x_studio_update_cost" widget="boolean_toggle" string="Actualizar coste" required="True"/>
+    <field name="x_studio_standard_cost" invisible="x_studio_price_change != True"/>
+  </xpath>
+</data></field>
+        </record>
+
+        <record id="view_6267" model="ir.ui.view">
+            <field name="name">Odoo Studio: Default list view for x_link_controller customization</field>
+            <field name="model">x_link_controller</field>
+            <field name="inherit_id" ref="view_6254"/>
+            <field name="priority" eval="99"/>
+            <field name="mode">extension</field>
+            <field name="active" eval="True"/>
+            <field name="arch" type="xml"><data>
+  <xpath expr="//field[@name='x_name']" position="after">
+    <field name="x_studio_product" optional="show"/>
+    <field name="x_studio_supplier" optional="show"/>
+    <field name="x_studio_price_change" optional="show"/>
+    <field name="x_studio_api" optional="show"/>
+  </xpath>
+</data></field>
+        </record>
+</odoo>

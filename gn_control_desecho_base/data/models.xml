@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="model_x_control_de_desecho" model="ir.model">
+            <field name="name">Control de desecho</field>
+            <field name="model">x_control_de_desecho</field>
+            <field name="state">manual</field>
+            <field name="is_mail_thread" eval="True"/>
+            <field name="is_mail_activity" eval="True"/>
+        </record>
+
+        <record id="field_product_template__x_studio_production" model="ir.model.fields">
+            <field name="name">x_studio_production</field>
+            <field name="model_id" ref="product.model_product_template"/>
+            <field name="field_description">Producto a fabricar</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_control_de_desecho__x_active" model="ir.model.fields">
+            <field name="name">x_active</field>
+            <field name="model_id" ref="model_x_control_de_desecho"/>
+            <field name="field_description">Activo</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="tracking" eval="1"/>
+        </record>
+
+        <record id="field_x_control_de_desecho__x_name" model="ir.model.fields">
+            <field name="name">x_name</field>
+            <field name="model_id" ref="model_x_control_de_desecho"/>
+            <field name="field_description">Descripción</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="True"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="True"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="tracking" eval="1"/>
+        </record>
+
+        <record id="field_x_control_de_desecho__x_studio_active" model="ir.model.fields">
+            <field name="name">x_studio_active</field>
+            <field name="model_id" ref="model_x_control_de_desecho"/>
+            <field name="field_description">Active</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_control_de_desecho__x_studio_frequency" model="ir.model.fields">
+            <field name="name">x_studio_frequency</field>
+            <field name="model_id" ref="model_x_control_de_desecho"/>
+            <field name="field_description">Frequency</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_control_de_desecho__x_studio_last_date" model="ir.model.fields">
+            <field name="name">x_studio_last_date</field>
+            <field name="model_id" ref="model_x_control_de_desecho"/>
+            <field name="field_description">Last date</field>
+            <field name="ttype">datetime</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_control_de_desecho__x_studio_next_date" model="ir.model.fields">
+            <field name="name">x_studio_next_date</field>
+            <field name="model_id" ref="model_x_control_de_desecho"/>
+            <field name="field_description">Next date</field>
+            <field name="ttype">datetime</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_control_de_desecho__x_studio_sequence" model="ir.model.fields">
+            <field name="name">x_studio_sequence</field>
+            <field name="model_id" ref="model_x_control_de_desecho"/>
+            <field name="field_description">Secuencia</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_control_de_desecho__x_studio_weekday" model="ir.model.fields">
+            <field name="name">x_studio_weekday</field>
+            <field name="model_id" ref="model_x_control_de_desecho"/>
+            <field name="field_description">Weekday</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': '1', 'name': 'Monday', 'sequence': 0}), Command.create({'value': '2', 'name': 'Tuesday', 'sequence': 1}), Command.create({'value': '3', 'name': 'Wednesday', 'sequence': 2}), Command.create({'value': '4', 'name': 'Thursday', 'sequence': 3}), Command.create({'value': '5', 'name': 'Friday', 'sequence': 4}), Command.create({'value': '6', 'name': 'Saturday', 'sequence': 5}), Command.create({'value': '7', 'name': 'Sunday', 'sequence': 6})]"/>
+        </record>
+
+        <record id="field_x_control_de_desecho__x_studio_company" model="ir.model.fields">
+            <field name="name">x_studio_company</field>
+            <field name="model_id" ref="model_x_control_de_desecho"/>
+            <field name="field_description">Company</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">res.company</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_control_de_desecho__x_studio_product_product" model="ir.model.fields">
+            <field name="name">x_studio_product_product</field>
+            <field name="model_id" ref="model_x_control_de_desecho"/>
+            <field name="field_description">X Studio Product Product</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">product.product</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_control_de_desecho__x_studio_warehouse" model="ir.model.fields">
+            <field name="name">x_studio_warehouse</field>
+            <field name="model_id" ref="model_x_control_de_desecho"/>
+            <field name="field_description">X Studio Warehouse</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">stock.location</field>
+            <field name="relation_table">x_stock_location_x_control_de_desecho_rel</field>
+            <field name="column1">x_control_de_desecho_id</field>
+            <field name="column2">stock_location_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_control_de_desecho__x_studio_scrap" model="ir.model.fields">
+            <field name="name">x_studio_scrap</field>
+            <field name="model_id" ref="model_x_control_de_desecho"/>
+            <field name="field_description">Scrap</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">stock.scrap</field>
+            <field name="relation_table">x_stock_scrap_x_control_de_desecho_rel</field>
+            <field name="column1">x_control_de_desecho_id</field>
+            <field name="column2">stock_scrap_id</field>
+            <field name="depends">x_studio_product_product</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="True"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="False"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="compute"><![CDATA[for record in self:
+    scrap_ids = []
+
+    if record.x_studio_product_product:
+        scraps = self.env['stock.scrap'].search(
+            [
+                ('product_id', '=', record.x_studio_product_product.id)
+            ],
+            order='create_date desc',
+            limit=30
+        )
+
+        scrap_ids = scraps.ids
+
+    record['x_studio_scrap'] = [(6, 0, scrap_ids)]]]></field>
+        </record>
+
+        <!-- Orden de la lista (después de crear sus campos) -->
+        <record id="model_x_control_de_desecho" model="ir.model">
+            <field name="order">x_studio_sequence asc, id asc</field>
+        </record>
+</odoo>

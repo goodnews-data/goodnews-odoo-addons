@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="action_server_1850" model="ir.actions.server">
+            <field name="name">[ARCHIVADA] Actualizar Estado</field>
+            <field name="model_id" ref="stock.model_stock_picking"/>
+            <field name="state">object_write</field>
+            <field name="usage">base_automation</field>
+            <field name="crud_model_id" ref="stock.model_stock_picking"/>
+            <field name="update_field_id" ref="stock.field_stock_picking__state"/>
+            <field name="update_path">state</field>
+            <field name="update_m2m_operation">add</field>
+            <field name="update_boolean_value">true</field>
+            <field name="evaluation_type">value</field>
+            <field name="value">cancel</field>
+            <field name="selection_value" ref="stock.selection__stock_picking__state__cancel"/>
+            <field name="sequence" eval="6"/>
+        </record>
+</odoo>

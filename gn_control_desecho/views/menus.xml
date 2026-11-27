@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="menu_1044" model="ir.ui.menu">
+            <field name="name">Control de desecho</field>
+            <field name="parent_id" ref="mrp.menu_mrp_configuration"/>
+            <field name="sequence" eval="2"/>
+            <field name="active" eval="True"/>
+            <field name="action" ref="action_window_1733"/>
+        </record>
+</odoo>

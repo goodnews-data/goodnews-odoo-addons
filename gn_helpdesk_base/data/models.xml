@@ -1,0 +1,532 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="field_helpdesk_ticket__x_studio_barista_id" model="ir.model.fields">
+            <field name="name">x_studio_barista_id</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Barista Id</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_barista_name" model="ir.model.fields">
+            <field name="name">x_studio_barista_name</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Barista Name</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="help">Nombre del Barista</field>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_city" model="ir.model.fields">
+            <field name="name">x_studio_city</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">City</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': '1', 'name': 'Barcelona', 'sequence': 0}), Command.create({'value': '2', 'name': 'Madrid', 'sequence': 1}), Command.create({'value': '3', 'name': 'Paris', 'sequence': 2}), Command.create({'value': '5', 'name': 'Amsterdam', 'sequence': 3}), Command.create({'value': '6', 'name': 'London', 'sequence': 4})]"/>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_comentario_valoracion" model="ir.model.fields">
+            <field name="name">x_studio_comentario_valoracion</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Feedback comments</field>
+            <field name="ttype">text</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="help">Comentarios de la valoración de la conversación</field>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_confirmed_date" model="ir.model.fields">
+            <field name="name">x_studio_confirmed_date</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Fecha confirmada intervención</field>
+            <field name="ttype">text</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_email_enviado" model="ir.model.fields">
+            <field name="name">x_studio_email_enviado</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Sent email to supplier</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="help">Checkbox de email enviado al proveedor</field>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_fecha_email" model="ir.model.fields">
+            <field name="name">x_studio_fecha_email</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Sent Date and Time</field>
+            <field name="ttype">datetime</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="help">Fecha de email enviado al proveedor</field>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_incidencia_catalogo" model="ir.model.fields">
+            <field name="name">x_studio_incidencia_catalogo</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Notion Incidence</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="help">Incidencia de Notion detectada</field>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_incidencia_detectada" model="ir.model.fields">
+            <field name="name">x_studio_incidencia_detectada</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Incidence</field>
+            <field name="ttype">text</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="help">Nombre de la incidencia generado por IA</field>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_intervention_date" model="ir.model.fields">
+            <field name="name">x_studio_intervention_date</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Intervention date</field>
+            <field name="ttype">datetime</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="help">Fecha de Intervención del Proveedor</field>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_notas" model="ir.model.fields">
+            <field name="name">x_studio_notas</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Call summary</field>
+            <field name="ttype">text</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="help">Comentarios posteriores a la llamada con el Proveedor</field>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_priority" model="ir.model.fields">
+            <field name="name">x_studio_priority</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Priority</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': '0', 'name': 'No asignada', 'sequence': 0}), Command.create({'value': '1', 'name': 'Baja', 'sequence': 1}), Command.create({'value': '2', 'name': 'Alta', 'sequence': 2}), Command.create({'value': '3', 'name': 'Crítica', 'sequence': 3})]"/>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_recursos_visuales_mov" model="ir.model.fields">
+            <field name="name">x_studio_recursos_visuales_mov</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Videos</field>
+            <field name="ttype">text</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="help">URL de los vídeos</field>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_reopened" model="ir.model.fields">
+            <field name="name">x_studio_reopened</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Reopened</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_resumen_problema" model="ir.model.fields">
+            <field name="name">x_studio_resumen_problema</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Problem summary</field>
+            <field name="ttype">text</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_status" model="ir.model.fields">
+            <field name="name">x_studio_status</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Estado</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': '1', 'name': '1', 'sequence': 0}), Command.create({'value': '2', 'name': '2', 'sequence': 1}), Command.create({'value': '3', 'name': '3', 'sequence': 2}), Command.create({'value': '4', 'name': '4', 'sequence': 3}), Command.create({'value': '5', 'name': '5', 'sequence': 4})]"/>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_valoracion" model="ir.model.fields">
+            <field name="name">x_studio_valoracion</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Feedback rating</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="help">Rating de la valoración de la conversación</field>
+            <field name="selection_ids" eval="[Command.create({'value': '1', 'name': '1', 'sequence': 0}), Command.create({'value': '2', 'name': '2', 'sequence': 1}), Command.create({'value': '3', 'name': '3', 'sequence': 2}), Command.create({'value': '4', 'name': '4', 'sequence': 3}), Command.create({'value': '5', 'name': '5', 'sequence': 4}), Command.create({'value': '6', 'name': '6', 'sequence': 5})]"/>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_visual_elements" model="ir.model.fields">
+            <field name="name">x_studio_visual_elements</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Images</field>
+            <field name="ttype">text</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="help">URL de las imagenes</field>
+        </record>
+
+        <record id="field_account_move__x_studio_many2many_field_4rv_1jpl3q5vt" model="ir.model.fields">
+            <field name="name">x_studio_many2many_field_4rv_1jpl3q5vt</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="field_description">Nuevo Many2Many</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">helpdesk.ticket</field>
+            <field name="relation_table">x_account_move_helpdesk_ticket_rel_1</field>
+            <field name="column1">account_move_id</field>
+            <field name="column2">helpdesk_ticket_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_account_move__x_studio_many2many_field_75_1jpl3s1cq" model="ir.model.fields">
+            <field name="name">x_studio_many2many_field_75_1jpl3s1cq</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="field_description">Nuevo Many2Many</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">helpdesk.ticket</field>
+            <field name="relation_table">x_account_move_helpdesk_ticket_rel_2</field>
+            <field name="column1">account_move_id</field>
+            <field name="column2">helpdesk_ticket_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_account_move__x_studio_tickets" model="ir.model.fields">
+            <field name="name">x_studio_tickets</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="field_description">Tickets</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">helpdesk.ticket</field>
+            <field name="relation_table">x_account_move_helpdesk_ticket_rel</field>
+            <field name="column1">account_move_id</field>
+            <field name="column2">helpdesk_ticket_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_invoice" model="ir.model.fields">
+            <field name="name">x_studio_invoice</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Invoice</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">account.move</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_maintenance_request_id" model="ir.model.fields">
+            <field name="name">x_studio_maintenance_request_id</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Solicitud de mantenimiento</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">maintenance.request</field>
+            <field name="relation_table">x_helpdesk_ticket_maintenance_request_rel</field>
+            <field name="column1">helpdesk_ticket_id</field>
+            <field name="column2">maintenance_request_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_pdv" model="ir.model.fields">
+            <field name="name">x_studio_pdv</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Store</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">pos.config</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="help">Punto de venta</field>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_reopened_tickets" model="ir.model.fields">
+            <field name="name">x_studio_reopened_tickets</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Reopened tickets</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">helpdesk.ticket</field>
+            <field name="relation_table">x_helpdesk_ticket_helpdesk_ticket_rel</field>
+            <field name="column1">id1</field>
+            <field name="column2">id2</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_responsable" model="ir.model.fields">
+            <field name="name">x_studio_responsable</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">responsable</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">hr.employee</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_helpdesk_ticket__x_studio_supplier" model="ir.model.fields">
+            <field name="name">x_studio_supplier</field>
+            <field name="model_id" ref="helpdesk.model_helpdesk_ticket"/>
+            <field name="field_description">Supplier</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">res.partner</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_maintenance_request__x_studio_pdv" model="ir.model.fields">
+            <field name="name">x_studio_pdv</field>
+            <field name="model_id" ref="maintenance.model_maintenance_request"/>
+            <field name="field_description">Pdv</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">pos.config</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_maintenance_request__x_studio_survey" model="ir.model.fields">
+            <field name="name">x_studio_survey</field>
+            <field name="model_id" ref="maintenance.model_maintenance_request"/>
+            <field name="field_description">Survey</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">survey.user_input</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_maintenance_request__x_studio_ticket_origin" model="ir.model.fields">
+            <field name="name">x_studio_ticket_origin</field>
+            <field name="model_id" ref="maintenance.model_maintenance_request"/>
+            <field name="field_description">ticket origin</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">helpdesk.ticket</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+</odoo>

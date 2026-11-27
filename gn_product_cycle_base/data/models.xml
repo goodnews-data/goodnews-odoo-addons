@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="model_x_product_cycle" model="ir.model">
+            <field name="name">product cycle</field>
+            <field name="model">x_product_cycle</field>
+            <field name="state">manual</field>
+            <field name="is_mail_thread" eval="True"/>
+            <field name="is_mail_activity" eval="True"/>
+        </record>
+
+        <record id="field_x_product_cycle__x_active" model="ir.model.fields">
+            <field name="name">x_active</field>
+            <field name="model_id" ref="model_x_product_cycle"/>
+            <field name="field_description">Activo</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="tracking" eval="1"/>
+        </record>
+
+        <record id="field_x_product_cycle__x_name" model="ir.model.fields">
+            <field name="name">x_name</field>
+            <field name="model_id" ref="model_x_product_cycle"/>
+            <field name="field_description">Descripción</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="True"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="True"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="tracking" eval="1"/>
+        </record>
+
+        <record id="field_x_product_cycle__x_studio_sequence" model="ir.model.fields">
+            <field name="name">x_studio_sequence</field>
+            <field name="model_id" ref="model_x_product_cycle"/>
+            <field name="field_description">Secuencia</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_product_cycle__x_studio_company" model="ir.model.fields">
+            <field name="name">x_studio_company</field>
+            <field name="model_id" ref="model_x_product_cycle"/>
+            <field name="field_description">Company</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">res.company</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <!-- Orden de la lista (después de crear sus campos) -->
+        <record id="model_x_product_cycle" model="ir.model">
+            <field name="order">x_studio_sequence asc, id asc</field>
+        </record>
+</odoo>

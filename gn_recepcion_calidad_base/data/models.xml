@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="model_x_quality_check_worksheet_template_1" model="ir.model">
+            <field name="name">Recepción</field>
+            <field name="model">x_quality_check_worksheet_template_1</field>
+            <field name="state">manual</field>
+            <field name="is_mail_thread" eval="False"/>
+            <field name="is_mail_activity" eval="False"/>
+        </record>
+
+        <record id="field_x_quality_check_worksheet_template_1__x_comments" model="ir.model.fields">
+            <field name="name">x_comments</field>
+            <field name="model_id" ref="model_x_quality_check_worksheet_template_1"/>
+            <field name="field_description">Comments</field>
+            <field name="ttype">html</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="True"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_quality_check_worksheet_template_1__x_passed" model="ir.model.fields">
+            <field name="name">x_passed</field>
+            <field name="model_id" ref="model_x_quality_check_worksheet_template_1"/>
+            <field name="field_description">Passed</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_quality_check_worksheet_template_1__x_studio_damaged_product_imagen" model="ir.model.fields">
+            <field name="name">x_studio_damaged_product_imagen</field>
+            <field name="model_id" ref="model_x_quality_check_worksheet_template_1"/>
+            <field name="field_description">Damaged product image</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_quality_check_worksheet_template_1__x_studio_delivery_note" model="ir.model.fields">
+            <field name="name">x_studio_delivery_note</field>
+            <field name="model_id" ref="model_x_quality_check_worksheet_template_1"/>
+            <field name="field_description">Delivery note</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_quality_check_worksheet_template_1__x_studio_extra_pic_1" model="ir.model.fields">
+            <field name="name">x_studio_extra_pic_1</field>
+            <field name="model_id" ref="model_x_quality_check_worksheet_template_1"/>
+            <field name="field_description"></field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_quality_check_worksheet_template_1__x_studio_extra_pic_2" model="ir.model.fields">
+            <field name="name">x_studio_extra_pic_2</field>
+            <field name="model_id" ref="model_x_quality_check_worksheet_template_1"/>
+            <field name="field_description">Add additional photos if necessary.</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_quality_check_worksheet_template_1__x_studio_extra_picture" model="ir.model.fields">
+            <field name="name">x_studio_extra_picture</field>
+            <field name="model_id" ref="model_x_quality_check_worksheet_template_1"/>
+            <field name="field_description">Extra picture</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_quality_check_worksheet_template_1__x_studio_extra_picture_filename" model="ir.model.fields">
+            <field name="name">x_studio_extra_picture_filename</field>
+            <field name="model_id" ref="model_x_quality_check_worksheet_template_1"/>
+            <field name="field_description">Filename for x_studio_binary_field_7e8_1jicje4vi</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_quality_check_worksheet_template_1__x_studio_missing_product_imagen" model="ir.model.fields">
+            <field name="name">x_studio_missing_product_imagen</field>
+            <field name="model_id" ref="model_x_quality_check_worksheet_template_1"/>
+            <field name="field_description">Missing product image</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_quality_check_worksheet_template_1__x_studio_wrong_product_imagen" model="ir.model.fields">
+            <field name="name">x_studio_wrong_product_imagen</field>
+            <field name="model_id" ref="model_x_quality_check_worksheet_template_1"/>
+            <field name="field_description">Wrong product image</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_quality_check_worksheet_template_1__x_studio_wrong_quantity_imagen" model="ir.model.fields">
+            <field name="name">x_studio_wrong_quantity_imagen</field>
+            <field name="model_id" ref="model_x_quality_check_worksheet_template_1"/>
+            <field name="field_description">Wrong quantity image</field>
+            <field name="ttype">binary</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_quality_check_worksheet_template_1__x_quality_check_id" model="ir.model.fields">
+            <field name="name">x_quality_check_id</field>
+            <field name="model_id" ref="model_x_quality_check_worksheet_template_1"/>
+            <field name="field_description">Quality Check</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">quality.check</field>
+            <field name="on_delete">cascade</field>
+            <field name="required" eval="True"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_quality_check_worksheet_template_1__x_studio_incidence_type" model="ir.model.fields">
+            <field name="name">x_studio_incidence_type</field>
+            <field name="model_id" ref="model_x_quality_check_worksheet_template_1"/>
+            <field name="field_description">Incidence type</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">quality.tag</field>
+            <field name="relation_table">x_quality_tag_x_quality_check_worksheet_template_1_rel</field>
+            <field name="column1">x_quality_check_worksheet_template_1_id</field>
+            <field name="column2">quality_tag_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_quality_check_worksheet_template_1__x_name" model="ir.model.fields">
+            <field name="name">x_name</field>
+            <field name="model_id" ref="model_x_quality_check_worksheet_template_1"/>
+            <field name="field_description">Name</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="related">x_quality_check_id.name</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="False"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+</odoo>

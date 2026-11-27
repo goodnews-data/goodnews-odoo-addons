@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="action_server_1695" model="ir.actions.server">
+            <field name="name">POS Discount – Auto Activate &amp; Discontinue</field>
+            <field name="model_id" ref="pos_custom_discounts.model_pos_custom_discount"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[MAX_BATCH = 30
+
+now = datetime.datetime.now()
+today = now.date()
+now_str = now.strftime("%Y-%m-%d %H:%M:%S")
+date_limit = now - datetime.timedelta(days=30)
+
+Model = env["pos.custom.discount"]
+
+# --------------------------------------------
+# Buscar candidatos (una sola query)
+# --------------------------------------------
+candidates = Model.search([
+    ("x_studio_active_1", "=", True),
+    ("write_date", ">=", date_limit),
+    "|",
+    ("x_studio_start_date", "=", today),
+    ("x_studio_end_date", "<", today),
+], limit=MAX_BATCH)
+
+processed = 0
+
+for disc in candidates:
+    if processed >= MAX_BATCH:
+        break
+
+    # ---------------- ACTIVATE ----------------
+    if disc.x_studio_start_date == today:
+        if not disc.available_in_pos and disc.x_studio_available_in_pos:
+            disc.write({
+                "available_in_pos": [
+                    (6, 0, disc.x_studio_available_in_pos.ids)
+                ]
+            })
+            processed += 1
+        continue
+
+    # --------------- DEACTIVATE ---------------
+    if disc.x_studio_end_date and disc.x_studio_end_date < today:
+        vals = {
+            "x_studio_active_1": False,
+        }
+
+        # Vaciar solo el campo estándar
+        if disc.available_in_pos:
+            vals["available_in_pos"] = [(5, 0, 0)]
+
+        marker = "discontinued on %s" % now_str
+
+        if disc.description:
+            if "discontinued on" not in disc.description:
+                vals["description"] = disc.description + "\n" + marker
+        else:
+            vals["description"] = marker
+
+        disc.write(vals)
+        processed += 1
+]]></field>
+        </record>
+</odoo>

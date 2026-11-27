@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="model_x_factura_de_proveedor" model="ir.model">
+            <field name="name">Factura de Proveedor</field>
+            <field name="model">x_factura_de_proveedor</field>
+            <field name="state">manual</field>
+            <field name="is_mail_thread" eval="False"/>
+            <field name="is_mail_activity" eval="False"/>
+        </record>
+
+        <record id="model_x_bpp_banco_prevsion_d" model="ir.model">
+            <field name="name">(BPP) - Banco Prevsion de Pago</field>
+            <field name="model">x_bpp_banco_prevsion_d</field>
+            <field name="state">manual</field>
+            <field name="is_mail_thread" eval="True"/>
+            <field name="is_mail_activity" eval="True"/>
+        </record>
+
+        <record id="model_x_bpp_banco_prevsion_d_tag" model="ir.model">
+            <field name="name">(BPP) - Banco Prevsion de Pago Tags</field>
+            <field name="model">x_bpp_banco_prevsion_d_tag</field>
+            <field name="state">manual</field>
+            <field name="is_mail_thread" eval="False"/>
+            <field name="is_mail_activity" eval="False"/>
+        </record>
+
+        <record id="model_x_survey_user_input_line_93926" model="ir.model">
+            <field name="name">survey_user_input_line</field>
+            <field name="model">x_survey_user_input_line_93926</field>
+            <field name="state">manual</field>
+            <field name="is_mail_thread" eval="False"/>
+            <field name="is_mail_activity" eval="False"/>
+        </record>
+
+        <record id="model_x_facgur" model="ir.model">
+            <field name="name">facgur</field>
+            <field name="model">x_facgur</field>
+            <field name="state">manual</field>
+            <field name="is_mail_thread" eval="False"/>
+            <field name="is_mail_activity" eval="False"/>
+        </record>
+
+        <record id="field_x_bpp_banco_prevsion_d__x_active" model="ir.model.fields">
+            <field name="name">x_active</field>
+            <field name="model_id" ref="model_x_bpp_banco_prevsion_d"/>
+            <field name="field_description">Activo</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="tracking" eval="1"/>
+        </record>
+
+        <record id="field_x_bpp_banco_prevsion_d__x_name" model="ir.model.fields">
+            <field name="name">x_name</field>
+            <field name="model_id" ref="model_x_bpp_banco_prevsion_d"/>
+            <field name="field_description">Banco de Previsión de Pago</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="True"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="True"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="tracking" eval="1"/>
+        </record>
+
+        <record id="field_x_bpp_banco_prevsion_d__x_studio_notes" model="ir.model.fields">
+            <field name="name">x_studio_notes</field>
+            <field name="model_id" ref="model_x_bpp_banco_prevsion_d"/>
+            <field name="field_description">Notas</field>
+            <field name="ttype">html</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="True"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_bpp_banco_prevsion_d__x_studio_sequence" model="ir.model.fields">
+            <field name="name">x_studio_sequence</field>
+            <field name="model_id" ref="model_x_bpp_banco_prevsion_d"/>
+            <field name="field_description">Secuencia</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_bpp_banco_prevsion_d_tag__x_color" model="ir.model.fields">
+            <field name="name">x_color</field>
+            <field name="model_id" ref="model_x_bpp_banco_prevsion_d_tag"/>
+            <field name="field_description">Color</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_bpp_banco_prevsion_d_tag__x_name" model="ir.model.fields">
+            <field name="name">x_name</field>
+            <field name="model_id" ref="model_x_bpp_banco_prevsion_d_tag"/>
+            <field name="field_description">Nombre</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="True"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_facgur__x_name" model="ir.model.fields">
+            <field name="name">x_name</field>
+            <field name="model_id" ref="model_x_facgur"/>
+            <field name="field_description">Name</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_factura_de_proveedor__x_name" model="ir.model.fields">
+            <field name="name">x_name</field>
+            <field name="model_id" ref="model_x_factura_de_proveedor"/>
+            <field name="field_description">Name</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_survey_user_input_line_93926__x_name" model="ir.model.fields">
+            <field name="name">x_name</field>
+            <field name="model_id" ref="model_x_survey_user_input_line_93926"/>
+            <field name="field_description">Descripción</field>
+            <field name="ttype">char</field>
+            <field name="state">manual</field>
+            <field name="required" eval="True"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="True"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_survey_user_input_line_93926__x_studio_sequence" model="ir.model.fields">
+            <field name="name">x_studio_sequence</field>
+            <field name="model_id" ref="model_x_survey_user_input_line_93926"/>
+            <field name="field_description">Secuencia</field>
+            <field name="ttype">integer</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_bpp_banco_prevsion_d__x_studio_tag_ids" model="ir.model.fields">
+            <field name="name">x_studio_tag_ids</field>
+            <field name="model_id" ref="model_x_bpp_banco_prevsion_d"/>
+            <field name="field_description">Etiquetas</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">x_bpp_banco_prevsion_d_tag</field>
+            <field name="relation_table">x_bpp_banco_prevsion_d_tag_rel</field>
+            <field name="column1">x_bpp_banco_prevsion_d_id</field>
+            <field name="column2">x_tag_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_x_survey_user_input_line_93926__x_survey_user_input_id" model="ir.model.fields">
+            <field name="name">x_survey_user_input_id</field>
+            <field name="model_id" ref="model_x_survey_user_input_line_93926"/>
+            <field name="field_description">X Survey User Input</field>
+            <field name="ttype">many2one</field>
+            <field name="state">manual</field>
+            <field name="relation">survey.user_input</field>
+            <field name="on_delete">set null</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <!-- Orden de la lista (después de crear sus campos) -->
+        <record id="model_x_bpp_banco_prevsion_d" model="ir.model">
+            <field name="order">x_studio_sequence asc, id asc</field>
+        </record>
+</odoo>

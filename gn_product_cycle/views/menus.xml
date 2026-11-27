@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="menu_1091" model="ir.ui.menu">
+            <field name="name">product cycle</field>
+            <field name="parent_id" ref="project.menu_project_config"/>
+            <field name="sequence" eval="7"/>
+            <field name="active" eval="True"/>
+            <field name="action" ref="action_window_1847"/>
+        </record>
+</odoo>

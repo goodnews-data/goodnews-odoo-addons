@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Se instala APAGADA. En prod: apagada, cada 2 minutes -->
+        <record id="cron_178" model="ir.cron">
+            <field name="name">Prueba califrais 2-3 min</field>
+            <field name="model_id" ref="purchase.model_purchase_order"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ============================================================
+# [DIAG3] Last backend attempt: try with sudo.
+# If the token is read from a field on res.users, running as
+# superuser might pull a different (possibly fresh) token.
+# ============================================================
+
+HARDCODED_ORDER_ID = 59163
+CONFIRMABLE_STATES = ("draft", "sent")
+
+order = env["purchase.order"].browse(HARDCODED_ORDER_ID).exists()
+
+if order and order.state in CONFIRMABLE_STATES:
+    # Same as before: switch to the order's company.
+    # Then ALSO sudo: run as superuser, which may have a different token.
+    order_to_confirm = order.with_company(order.company_id).sudo()
+
+    sp_name = "sp_diag3_" + str(order.id)
+    env.cr.execute("SAVEPOINT " + sp_name)
+
+    attempt_succeeded = False
+    last_error_msg = ""
+
+    try:
+        order_to_confirm.button_confirm()
+        attempt_succeeded = True
+    except Exception as err:
+        env.cr.execute("ROLLBACK TO SAVEPOINT " + sp_name)
+        order.invalidate_recordset()
+        last_error_msg = str(err)
+
+    diag = (
+        "<b>--- DIAG3: with_company + sudo ---</b><br/>"
+        "env.user original: " + str(env.user.name) + " (ID "
+        + str(env.user.id) + ")<br/>"
+        "env tras sudo: " + str(order_to_confirm.env.user.name)
+        + " (ID " + str(order_to_confirm.env.user.id) + ")<br/>"
+        "env.company tras sudo: " + str(order_to_confirm.env.company.name)
+        + " (ID " + str(order_to_confirm.env.company.id) + ")"
+    )
+
+    if attempt_succeeded:
+        env.cr.execute("RELEASE SAVEPOINT " + sp_name)
+        order.message_post(
+            body="<b>[DIAG3] EXITO con sudo</b><br/>" + diag,
+            body_is_html=True,
+        )
+    else:
+        order.message_post(
+            body="<b>[DIAG3] FALLO con sudo</b><br/>" + diag
+                 + "<br/><br/><b>Error:</b><br/><pre>"
+                 + last_error_msg + "</pre>",
+            body_is_html=True,
+        )]]></field>
+            <field name="interval_number" eval="2"/>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall" eval="5"/>
+            <field name="doall" eval="False"/>
+            <field name="priority" eval="20"/>
+            <field name="active" eval="False"/>
+        </record>
+    </data>
+</odoo>

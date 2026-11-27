@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="menu_865" model="ir.ui.menu">
+            <field name="name">Configuración personalizada</field>
+            <field name="parent_id" ref="account_accountant.menu_accounting"/>
+            <field name="sequence" eval="1000"/>
+            <field name="active" eval="False"/>
+        </record>
+
+        <record id="menu_866" model="ir.ui.menu">
+            <field name="name">(BPP) - Banco Prevsion de Pago Tags</field>
+            <field name="parent_id" ref="menu_865"/>
+            <field name="sequence" eval="10"/>
+            <field name="active" eval="True"/>
+            <field name="action" ref="action_window_1419"/>
+        </record>
+</odoo>

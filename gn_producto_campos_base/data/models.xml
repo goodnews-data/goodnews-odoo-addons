@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="field_product_template__x_measurement" model="ir.model.fields">
+            <field name="name">x_measurement</field>
+            <field name="model_id" ref="product.model_product_template"/>
+            <field name="field_description">Medida</field>
+            <field name="ttype">float</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_product_template__x_studio_unit_of_measure" model="ir.model.fields">
+            <field name="name">x_studio_unit_of_measure</field>
+            <field name="model_id" ref="product.model_product_template"/>
+            <field name="field_description">Unit of measure</field>
+            <field name="ttype">selection</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+            <field name="selection_ids" eval="[Command.create({'value': 'Lt', 'name': 'Lt', 'sequence': 0}), Command.create({'value': 'Kg', 'name': 'Kg', 'sequence': 1})]"/>
+        </record>
+</odoo>

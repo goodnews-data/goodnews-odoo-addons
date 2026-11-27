@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="action_server_1752" model="ir.actions.server">
+            <field name="name">Update Links</field>
+            <field name="model_id" ref="gn_link_controller_base.model_x_link_controller"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[# ══════════════════════════════════════════════════════════════════════════════
+# x_link_controller — Califrais / UdM / Precio
+# Acción de servidor (safe_eval, Odoo 17). Sin módulos, sin with, sin closures.
+#
+# CAMBIOS v2:
+#   · Nuevo BLOQUE UdM: escribe uom_po_id (UdM de compra) y uom_supplying_id
+#     (UdM de reabastecimiento) en el producto, validando categoría de UdM.
+#   · El bloque UdM se ejecuta ANTES del bloque de precio: el precio del
+#     proveedor se expresa en la UdM de compra, así que primero se fija la UdM.
+#   · Aislamiento por registro con SAVEPOINT: un registro con error ya no
+#     tumba el resto del lote.
+#   · Gate de coherencia: no se recalcula el coste si la UdM de compra del
+#     producto no coincide con x_studio_udm_compra.
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── BLOQUE 0 · CONSTANTES ─────────────────────────────────────────────────────
+MAX_RECORDS      = 20
+SAVEPOINT_NAME   = 'link_ctl'
+
+# Booleano opcional en x_link_controller. Si NO existe el campo, basta con que
+# la UdM esté rellenada para que se aplique. Si existe, el toggle manda.
+UOM_TOGGLE_FIELD = 'x_studio_update_uom'
+
+# (campo destino en el producto, campo origen en x_link_controller, etiqueta log)
+UOM_FIELD_MAP = [
+    ('uom_po_id',        'x_studio_udm_compra',           "UdM de compra"),
+    ('uom_supplying_id', 'x_studio_udm_reabastecimiento', "UdM de reabastecimiento"),
+]
+
+# ── GUARD ─────────────────────────────────────────────────────────────────────
+if len(records) > MAX_RECORDS:
+    raise UserError("Máximo %s registros por ejecución" % MAX_RECORDS)
+
+# ── HELPERS · NOMBRE CALIFRAIS ────────────────────────────────────────────────
+def _fmt_main(w):
+    if w == 'd':
+        return "d'"
+    return w.capitalize()
+
+def _fmt_brand(w):
+    if w.endswith('l') and w[:-1].isdigit():
+        return w[:-1] + 'L'
+    return w.capitalize()
+
+def _apply_volume_fixes(name):
+    volume_fixes = [(' 89l', ',89L'), (' 75l', ',75L'), (' 50l', ',50L')]
+    for pattern, replacement in volume_fixes:
+        idx = name.lower().find(pattern)
+        while idx != -1:
+            name = name[:idx] + replacement + name[idx + len(pattern):]
+            idx = name.lower().find(pattern, idx + len(replacement))
+    return name
+
+def _parse_slug(slug):
+    known_brands = {'oatly', 'alpro', 'minor', 'monin'}
+    words = slug.split('-')
+
+    brand_index = -1
+    for i, w in enumerate(words):
+        if w in known_brands:
+            brand_index = i
+            break
+
+    main_words  = words[:brand_index] if brand_index != -1 else words
+    brand_words = words[brand_index:] if brand_index != -1 else []
+    main_name   = " ".join(_fmt_main(w) for w in main_words).replace("d' ", "d'")
+    brand_name  = " ".join(_fmt_brand(w) for w in brand_words)
+    name        = (main_name + " - " + brand_name) if brand_name else main_name
+    return _apply_volume_fixes(name)
+
+def _extract_product_data(url):
+    try:
+        parts = url.split('/product/')[1].split('/')
+        pid   = parts[0] or None
+        name  = _parse_slug(parts[1]) if len(parts) > 1 and parts[1] else None
+        return pid, name
+    except (IndexError, AttributeError):
+        return None, None
+
+# ── HELPERS · UdM ─────────────────────────────────────────────────────────────
+def _uom_updates_enabled(record, toggle_field):
+    """Si el toggle existe, manda él. Si no existe, se permite actualizar."""
+    if toggle_field in record._fields:
+        return bool(record[toggle_field])
+    return True
+
+def _has_uom_input(record, uom_map):
+    """True si al menos una UdM origen está rellenada."""
+    for target_field, source_field, label in uom_map:
+        if source_field in record._fields and record[source_field]:
+            return True
+    return False
+
+def _build_uom_vals(product, record, uom_map):
+    """Calcula los vals de UdM validando la categoría. Devuelve (vals, mensajes).
+
+    Odoo obliga a que uom_id y uom_po_id compartan categoría (_check_uom); si no
+    coincide, se salta ese campo en vez de dejar que salte la ValidationError.
+    """
+    msgs = []
+    vals = {}
+    base_uom = product.uom_id
+
+    for target_field, source_field, label in uom_map:
+        if source_field not in record._fields:
+            continue
+
+        new_uom = record[source_field]
+        if not new_uom:
+            continue
+
+        if target_field not in product._fields:
+            msgs.append("%s: el campo %s no existe en el producto" % (label, target_field))
+            continue
+
+        current = product[target_field]
+        if current and current.id == new_uom.id:
+            msgs.append("%s: ya era %s" % (label, new_uom.name))
+            continue
+
+        if base_uom and new_uom.category_id.id != base_uom.category_id.id:
+            msgs.append("%s NO aplicada: %s es de categoría '%s' y el producto usa '%s'" % (
+                label, new_uom.name, new_uom.category_id.name, base_uom.category_id.name))
+            continue
+
+        vals[target_field] = new_uom.id
+        msgs.append("%s: %s → %s" % (label, current.name or "sin definir", new_uom.name))
+
+    return vals, msgs
+
+# ── HELPERS · PRECIO ──────────────────────────────────────────────────────────
+def _update_seller_price(product, supplier_id, new_price):
+    """Actualiza el precio de todas las líneas del proveedor. Devuelve cuántas."""
+    count = 0
+    for line in product.seller_ids:
+        if line.partner_id.id == supplier_id:
+            line.write({'price': new_price})
+            count += 1
+    return count
+
+# ── MAIN LOOP ─────────────────────────────────────────────────────────────────
+for record in records:
+    has_api   = bool(record.x_studio_api)
+    has_price = bool(record.x_studio_price_change)
+    has_uom   = _uom_updates_enabled(record, UOM_TOGGLE_FIELD) and _has_uom_input(record, UOM_FIELD_MAP)
+
+    if not has_api and not has_price and not has_uom:
+        continue
+
+    log     = []
+    product = record.x_studio_product
+
+    # Aislamiento por registro: si algo falla, se revierte solo este registro.
+    env.cr.execute("SAVEPOINT " + SAVEPOINT_NAME)
+    try:
+
+        # — Califrais block ────────────────────────────────────────────────────
+        if has_api:
+            url = record.x_studio_url or ''
+            if '/product/' not in url:
+                record.write({'x_studio_califrais_id': False, 'x_studio_califrais_name': False})
+                log.append("Califrais: URL inválida")
+            else:
+                pid, cal_name = _extract_product_data(url)
+                record.write({
+                    'x_studio_califrais_id':   pid      or False,
+                    'x_studio_califrais_name': cal_name or False,
+                })
+                if product:
+                    product.write({
+                        'califrais_id':   pid      or False,
+                        'califrais_name': cal_name or False,
+                    })
+                log.append("Califrais: ID=%s NAME=%s" % (pid, cal_name))
+
+        # — UdM block ──────────────────────────────────────────────────────────
+        # Va antes del precio: el precio de proveedor está expresado en la UdM
+        # de compra, y el coste se calcula con su ratio.
+        if has_uom:
+            if not product:
+                log.append("UdM: falta product")
+            else:
+                uom_vals, uom_msgs = _build_uom_vals(product, record, UOM_FIELD_MAP)
+                if uom_vals:
+                    product.write(uom_vals)
+                log.extend(uom_msgs)
+
+        # — Price block ────────────────────────────────────────────────────────
+        if has_price:
+            supplier    = record.x_studio_supplier
+            new_price   = record.x_studio_price
+            udm         = record.x_studio_udm_compra
+            tax         = record.x_studio_purchase_tax
+            update_cost = bool(record.x_studio_update_cost)
+
+            missing = []
+            if not supplier:      missing.append("supplier")
+            if new_price is None: missing.append("price")   # 0.0 es precio válido
+            if not product:       missing.append("product")
+
+            if missing:
+                log.append("Price: falta " + ", ".join(missing))
+            else:
+                n = _update_seller_price(product, supplier.id, new_price)
+                if n:
+                    log.append("Precio actualizado: %s línea(s) → %s @ %s" % (n, supplier.name, new_price))
+                else:
+                    log.append("Precio no actualizado: %s no está como proveedor" % supplier.name)
+
+                # Standard cost (solo si x_studio_update_cost está activado)
+                if not update_cost:
+                    log.append("Coste no actualizado: x_studio_update_cost desactivado")
+                elif not udm or not tax:
+                    missing_cost = []
+                    if not udm: missing_cost.append("udm_compra")
+                    if not tax: missing_cost.append("purchase_tax")
+                    log.append("Coste no actualizado: falta " + ", ".join(missing_cost))
+                elif product.uom_po_id.id != udm.id:
+                    # Coherencia: sin esto se calcularía el coste con un ratio
+                    # distinto al de la UdM de compra real del producto.
+                    log.append("Coste no actualizado: la UdM de compra del producto (%s) no coincide con %s" % (
+                        product.uom_po_id.name or "sin definir", udm.name))
+                else:
+                    udm_ratio = udm.ratio
+                    if not udm_ratio:
+                        log.append("Coste no actualizado: ratio UdM es 0")
+                    else:
+                        tax_factor    = 1 + (tax.amount / 100.0)
+                        standard_cost = (new_price / udm_ratio) * tax_factor
+                        record.write({'x_studio_standard_cost': standard_cost})
+                        product.write({'standard_price': standard_cost})
+                        log.append("Coste actualizado: %.4f (%.4f / %s * %s)" % (
+                            standard_cost, new_price, udm_ratio, tax_factor))
+
+        env.cr.execute("RELEASE SAVEPOINT " + SAVEPOINT_NAME)
+
+    except UserError:
+        raise
+    except Exception as err:
+        env.cr.execute("ROLLBACK TO SAVEPOINT " + SAVEPOINT_NAME)
+        log = ["ERROR (cambios de este registro revertidos): %s" % str(err)[:300]]
+
+    if log:
+        record.message_post(body=" | ".join(log))]]></field>
+            <field name="binding_model_id" ref="gn_link_controller_base.model_x_link_controller"/>
+            <field name="binding_view_types">list,form</field>
+        </record>
+
+        <record id="action_window_1751" model="ir.actions.act_window">
+            <field name="name">Link controller</field>
+            <field name="res_model">x_link_controller</field>
+            <field name="view_mode">tree,form</field>
+            <field name="binding_view_types">list,form</field>
+            <field name="help" type="html"><p class="o_view_nocontent_smiling_face">
+                    Esta es tu nueva acción.
+                </p>
+                <p>Por defecto, contiene una lista y una vista de formulario y posiblemente
+                    otros tipos de vista dependiendo de las opciones que hayas elegido para tu modelo.
+                </p>
+                <p>
+                    Puede empezar a personalizar estas pantallas haciendo clic en el icono de Studio en la
+                    esquina superior derecha (también puede personalizar este mensaje de ayuda allí).
+                </p>
+            </field>
+        </record>
+</odoo>

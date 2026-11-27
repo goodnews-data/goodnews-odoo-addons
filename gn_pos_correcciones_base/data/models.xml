@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="field_pos_order_line__x_studio_ticket_error" model="ir.model.fields">
+            <field name="name">x_studio_ticket_error</field>
+            <field name="model_id" ref="point_of_sale.model_pos_order_line"/>
+            <field name="field_description">Ticket error</field>
+            <field name="ttype">boolean</field>
+            <field name="state">manual</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+
+        <record id="field_pos_order__x_studio_product" model="ir.model.fields">
+            <field name="name">x_studio_product</field>
+            <field name="model_id" ref="point_of_sale.model_pos_order"/>
+            <field name="field_description">Product</field>
+            <field name="ttype">many2many</field>
+            <field name="state">manual</field>
+            <field name="relation">product.product</field>
+            <field name="relation_table">x_pos_order_product_product_rel</field>
+            <field name="column1">pos_order_id</field>
+            <field name="column2">product_product_id</field>
+            <field name="required" eval="False"/>
+            <field name="readonly" eval="False"/>
+            <field name="index" eval="False"/>
+            <field name="copied" eval="True"/>
+            <field name="store" eval="True"/>
+            <field name="translate" eval="False"/>
+            <field name="sanitize" eval="False"/>
+            <field name="group_expand" eval="False"/>
+        </record>
+</odoo>

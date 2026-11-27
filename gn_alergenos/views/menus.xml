@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+        <record id="menu_1071" model="ir.ui.menu">
+            <field name="name">Allergens</field>
+            <field name="parent_id" ref="point_of_sale.pos_menu_products_configuration"/>
+            <field name="sequence" eval="1"/>
+            <field name="active" eval="True"/>
+            <field name="action" ref="action_window_1821"/>
+        </record>
+</odoo>

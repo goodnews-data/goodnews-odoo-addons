@@ -22,6 +22,15 @@ migraciones sin rehacerlo a mano.
 | [`gn_entregas_parciales_base`](gn_entregas_parciales_base/) | 17.0 | Campos de entregas parciales. Solo para una base nueva o migrada. |
 | [`gn_purchase_account_rules`](gn_purchase_account_rules/) | 17.0 | Reglas contables de compra: cuenta de gasto e IVA por proveedor y producto en pedidos y facturas. En producción desde el 09/11/2026. Sirve igual para una base nueva. |
 
+## Maqueta de migración (27/11/2026)
+
+El resto de desarrollos de Studio están en módulos `gn_<desarrollo>_base` + `gn_<desarrollo>` generados
+automáticamente desde producción (solo lectura) con `tools/maqueta_leer.py` y `tools/maqueta_generar.py`,
+más `gn_studio_grupos`, `gn_studio_modelos(_base)`, `gn_studio_campos_base` y `gn_studio_vistas`.
+Orden de instalación y qué revisar: [`MAQUETA.md`](MAQUETA.md) y [`maqueta_avisos.txt`](maqueta_avisos.txt).
+Probados en test con una variante de nombres cambiados (`tools/maqueta_variante.py`, `tools/maqueta_probar.py`):
+los 41 se instalan. No es una migración: en las bases actuales no se instalan (ya existe lo de Studio).
+
 ## Convención
 
 - Una carpeta por módulo, prefijo `gn_`.
